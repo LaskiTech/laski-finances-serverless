@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "typeRoots": ["../node_modules/@types"]
+  },
+  "include": ["lib/**/*.ts", "bin/**/*.ts"]
+}

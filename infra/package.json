@@ -1,0 +1,11 @@
+{
+  "name": "@laski/infra",
+  "version": "1.0.0",
+  "scripts": {
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.120.0",
+    "constructs": "^10.3.0"
+  }
+}
