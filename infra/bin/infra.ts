@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib/core';
-import { InfraCoreStack } from '../lib/infracore-stack';
+import { AuthStack } from '../lib/auth-stack';
+import { DataStack } from '../lib/data-stack';
+import { ApiStack } from '../lib/api-stack';
+import { FrontendStack } from '../lib/frontend-stack';
 import { environments } from '../config/environments';
+import { projectConfig } from '../config/project-config';
 
 const app = new cdk.App();
 const envName = app.node.tryGetContext('env') || 'dev';
@@ -11,6 +15,41 @@ if (!envConfig) {
   throw new Error(`Environment configuration for '${envName}' not found.`);
 }
 
-new InfraCoreStack(app, 'InfraStack', {
-  environment:envConfig,
+const prefix = projectConfig.prefixNameResources;
+const stage = envConfig.stage;
+
+const authStack = new AuthStack(app, `${prefix}-auth-stack-${stage}`, {
+  environment: envConfig,
+  projectConfig,
+  env: { account: envConfig.account, region: envConfig.region },
 });
+
+const dataStack = new DataStack(app, `${prefix}-data-stack-${stage}`, {
+  environment: envConfig,
+  projectConfig,
+  env: { account: envConfig.account, region: envConfig.region },
+});
+
+const apiStack = new ApiStack(app, `${prefix}-api-stack-${stage}`, {
+  environment: envConfig,
+  projectConfig,
+  env: { account: envConfig.account, region: envConfig.region },
+});
+
+const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack-${stage}`, {
+  environment: envConfig,
+  projectConfig,
+  env: { account: envConfig.account, region: envConfig.region },
+});
+
+// Explicit stack dependencies
+apiStack.addDependency(authStack);
+apiStack.addDependency(dataStack);
+frontendStack.addDependency(apiStack);
+
+// App-level tags
+cdk.Tags.of(app).add('project', projectConfig.appName);
+cdk.Tags.of(app).add('environment', envConfig.stage);
+cdk.Tags.of(app).add('managed-by', 'cdk');
+cdk.Tags.of(app).add('cost-center', 'personal');
+cdk.Tags.of(app).add('owner', 'laski');

@@ -2,26 +2,29 @@
   "name": "laski-finances-serverless",
   "private": true,
   "description": "Monorepo LASKI Finances",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "workspaces": [
     "back/*",
-    "front/*",
-    "Infra/*"
+    "front",
+    "infra"
   ],
   "scripts": {
-    "infra:deploy": "npm run deploy -w Infra",
-    "infra:diff": "npm run diff -w Infra",
-    "infra:synth": "npm run synth -w Infra",
+    "infra:deploy": "npm run deploy -w infra",
+    "infra:diff": "npm run diff -w infra",
+    "infra:synth": "npm run synth -w infra",
     "front:dev": "npm run dev -w front",
     "build": "npm run build --workspaces",
     "install-all": "npm install"
   },
   "devDependencies": {
-    "@types/node": "^20.19.27",
-    "aws-cdk": "2.120.0",
-    "aws-cdk-lib": "2.120.0",
-    "constructs": "^10.3.0",
-    "esbuild": "^0.19.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "@types/node": "20.19.27",
+    "aws-cdk": "2.244.0",
+    "aws-cdk-lib": "2.244.0",
+    "constructs": "10.3.0",
+    "esbuild": "0.19.11",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.3"
   }
 }

@@ -76,6 +76,33 @@ laski-finances-serveless/
 └── package.json                    # Monorepo root
 ```
 
+## Resource Tagging Strategy
+
+All AWS resources created via CDK must be tagged for observability, cost tracking, and operational clarity. Tags are applied at two levels:
+
+### App-Level Tags (applied in `infra/bin/infra.ts` via `cdk.Tags.of(app).add(...)`)
+
+| Tag Key | Value | Purpose |
+|---------|-------|---------|
+| `project` | `projectConfig.appName` | Groups all resources under the project for Cost Explorer and billing reports |
+| `environment` | `environment.stage` | Filters resources by deployment stage (dev/prod) |
+| `managed-by` | `cdk` | Distinguishes IaC-managed resources from manually created ones (drift detection, cleanup audits) |
+| `cost-center` | `personal` | FinOps grouping for budget alerts and cost allocation |
+| `owner` | `laski` | Contact/team responsible for the resources |
+
+### Stack-Level Tags (applied in each stack constructor via `cdk.Tags.of(this).add(...)`)
+
+| Tag Key | Value | Purpose |
+|---------|-------|---------|
+| `stack` | Stack name (e.g., `AuthStack`, `DataStack`) | Identifies which stack owns the resource for troubleshooting and cost breakdown per stack |
+
+### Rules
+
+- App-level tags propagate to all resources in all stacks automatically
+- Stack-level `stack` tag is added inside each stack's constructor so it reflects the actual owning stack
+- New stacks must always include the `stack` tag
+- Tag values must be lowercase and use hyphens for multi-word values (e.g., `laski-finances`)
+
 ## Environment Configuration
 
 - `dev`: us-west-2 (default)

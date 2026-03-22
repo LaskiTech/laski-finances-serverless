@@ -7,47 +7,100 @@ const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME!;
 
+// Valid transaction types: Income (INC) or Expense (EXP)
+const VALID_TYPES = ["INC", "EXP"] as const;
+
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const userId = event.requestContext.authorizer?.claims.sub; // RN6: Isola pelo ID do Cognito
-    const body = JSON.parse(event.body || "{}");
-    const { descricao, valorTotal, parcelas = 1, data, categoria, fonte, tipo } = body;
+    const userId = event.requestContext.authorizer?.claims?.sub;
 
-    const itemsToCreate = [];
-    const transactionGroupId = uuidv4(); // Para agrupar parcelas futuramente
+    if (!userId) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: "Unauthorized" }),
+      };
+    }
 
-    for (let i = 0; i < parcelas; i++) {
-      const dataParcela = new Date(data);
-      dataParcela.setMonth(dataParcela.getMonth() + i);
-      
-      const anoMes = dataParcela.toISOString().slice(0, 7); // Formato YYYY-MM
-      const valorParcela = valorTotal / parcelas;
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(event.body || "");
+    } catch {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid request body" }),
+      };
+    }
+
+    if (!body || typeof body !== "object") {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid request body" }),
+      };
+    }
+
+    const { description, totalAmount, installments = 1, date, category, source, type } = body as {
+      description: string;
+      totalAmount: number;
+      installments: number;
+      date: string;
+      category: string;
+      source: string;
+      type: string;
+    };
+
+    // Validate transaction type
+    if (!VALID_TYPES.includes(type as typeof VALID_TYPES[number])) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid transaction type. Must be INC or EXP" }),
+      };
+    }
+
+    // Validate installments: must be an integer >= 1
+    if (!Number.isInteger(installments) || installments < 1) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Invalid installments value. Must be an integer >= 1" }),
+      };
+    }
+
+    const transactionGroupId = uuidv4();
+
+    for (let i = 0; i < installments; i++) {
+      const installmentDate = new Date(date);
+      installmentDate.setMonth(installmentDate.getMonth() + i);
+
+      const yearMonth = installmentDate.toISOString().slice(0, 7); // YYYY-MM format
+      const installmentAmount = totalAmount / installments;
 
       const item = {
         pk: `USER#${userId}`,
-        sk: `TRANS#${anoMes}#${tipo}#${uuidv4()}`,
-        descricao: parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
-        valor: valorParcela,
-        categoria,
-        fonte, // RN5: Cartão XP, Nubank, etc.
-        tipo,  // REC (Receita) ou DESP (Despesa)
-        data: dataParcela.toISOString(),
-        groupId: transactionGroupId
+        sk: `TRANS#${yearMonth}#${type}#${uuidv4()}`,
+        description: installments > 1 ? `${description} (${i + 1}/${installments})` : description,
+        amount: installmentAmount,
+        totalAmount,
+        category,
+        source,
+        type,
+        date: installmentDate.toISOString(),
+        groupId: transactionGroupId,
+        installmentNumber: i + 1,
+        installmentTotal: installments,
       };
 
-      // Nota: Em produção, usaríamos BatchWriteItem. Para simplicidade aqui:
+      // Note: In production, consider using BatchWriteItem for better performance
       await docClient.send(new PutCommand({
         TableName: TABLE_NAME,
-        Item: item
+        Item: item,
       }));
     }
 
     return {
       statusCode: 201,
-      body: JSON.stringify({ message: "Transação(ões) criada(s) com sucesso!" }),
+      body: JSON.stringify({ message: "Transaction(s) created successfully" }),
     };
   } catch (error) {
     console.error(error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Erro interno" }) };
+    return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
   }
 };
