@@ -10,6 +10,9 @@ export interface AuthStackProps extends cdk.StackProps {
 }
 
 export class AuthStack extends cdk.Stack {
+  public readonly userPool: cognito.IUserPool;
+  public readonly userPoolClient: cognito.IUserPoolClient;
+
   constructor(scope: Construct, id: string, props: AuthStackProps) {
     super(scope, id, props);
 
@@ -32,6 +35,7 @@ export class AuthStack extends cdk.Stack {
         requireSymbols: true,
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      deletionProtection: true,
     });
 
     // User Pool Client
@@ -46,27 +50,24 @@ export class AuthStack extends cdk.Stack {
     });
 
     // User Pool Domain
-    const userPoolDomain = new cognito.UserPoolDomain(this, 'UserPoolDomain', {
+    new cognito.UserPoolDomain(this, 'UserPoolDomain', {
       userPool,
       cognitoDomain: {
         domainPrefix: `${prefix}-auth-${stage}`,
       },
     });
 
-    // Cross-stack exports
+    // Expose for cross-stack references via construct props
+    this.userPool = userPool;
+    this.userPoolClient = userPoolClient;
+
+    // Outputs for external consumers (CLI, frontend config)
     new cdk.CfnOutput(this, 'UserPoolId', {
       value: userPool.userPoolId,
-      exportName: `${prefix}-user-pool-id-${stage}`,
     });
 
     new cdk.CfnOutput(this, 'UserPoolClientId', {
       value: userPoolClient.userPoolClientId,
-      exportName: `${prefix}-user-pool-client-id-${stage}`,
-    });
-
-    new cdk.CfnOutput(this, 'UserPoolDomainOutput', {
-      value: userPoolDomain.domainName,
-      exportName: `${prefix}-user-pool-domain-${stage}`,
     });
   }
 }

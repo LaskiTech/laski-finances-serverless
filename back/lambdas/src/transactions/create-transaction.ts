@@ -2,13 +2,24 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME!;
 
-// Valid transaction types: Income (INC) or Expense (EXP)
-const VALID_TYPES = ["INC", "EXP"] as const;
+// Zod schema for transaction input validation
+const CreateTransactionSchema = z.object({
+  description: z.string().min(1, "Description is required"),
+  totalAmount: z.number().positive("Total amount must be positive"),
+  installments: z.number().int().min(1, "Installments must be an integer >= 1").default(1),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+  category: z.string().min(1, "Category is required"),
+  source: z.string().min(1, "Source is required"),
+  type: z.enum(["INC", "EXP"], { message: "Invalid transaction type. Must be INC or EXP" }),
+});
+
+type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>;
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
@@ -21,9 +32,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
-    let body: Record<string, unknown>;
+    let rawBody: unknown;
     try {
-      body = JSON.parse(event.body || "");
+      rawBody = JSON.parse(event.body || "");
     } catch {
       return {
         statusCode: 400,
@@ -31,39 +42,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       };
     }
 
-    if (!body || typeof body !== "object") {
+    // Validate input with Zod
+    const parsed = CreateTransactionSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map((issue) => issue.message);
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Invalid request body" }),
+        body: JSON.stringify({ error: "Validation failed", details: errors }),
       };
     }
 
-    const { description, totalAmount, installments = 1, date, category, source, type } = body as {
-      description: string;
-      totalAmount: number;
-      installments: number;
-      date: string;
-      category: string;
-      source: string;
-      type: string;
-    };
-
-    // Validate transaction type
-    if (!VALID_TYPES.includes(type as typeof VALID_TYPES[number])) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid transaction type. Must be INC or EXP" }),
-      };
-    }
-
-    // Validate installments: must be an integer >= 1
-    if (!Number.isInteger(installments) || installments < 1) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid installments value. Must be an integer >= 1" }),
-      };
-    }
-
+    const { description, totalAmount, installments, date, category, source, type } = parsed.data;
     const transactionGroupId = uuidv4();
 
     for (let i = 0; i < installments; i++) {

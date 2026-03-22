@@ -17,34 +17,38 @@ if (!envConfig) {
 
 const prefix = projectConfig.prefixNameResources;
 const stage = envConfig.stage;
+const cdkEnv = { account: envConfig.account, region: envConfig.region };
 
 const authStack = new AuthStack(app, `${prefix}-auth-stack-${stage}`, {
   environment: envConfig,
   projectConfig,
-  env: { account: envConfig.account, region: envConfig.region },
+  env: cdkEnv,
+  terminationProtection: stage === 'prod',
 });
 
 const dataStack = new DataStack(app, `${prefix}-data-stack-${stage}`, {
   environment: envConfig,
   projectConfig,
-  env: { account: envConfig.account, region: envConfig.region },
+  env: cdkEnv,
+  terminationProtection: true,
 });
 
 const apiStack = new ApiStack(app, `${prefix}-api-stack-${stage}`, {
   environment: envConfig,
   projectConfig,
-  env: { account: envConfig.account, region: envConfig.region },
+  env: cdkEnv,
+  userPool: authStack.userPool,
+  ledgerTable: dataStack.ledgerTable,
 });
 
 const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack-${stage}`, {
   environment: envConfig,
   projectConfig,
-  env: { account: envConfig.account, region: envConfig.region },
+  env: cdkEnv,
 });
 
-// Explicit stack dependencies
-apiStack.addDependency(authStack);
-apiStack.addDependency(dataStack);
+// Dependencies are now automatic via construct references (authStack → apiStack, dataStack → apiStack)
+// Only frontendStack needs explicit dependency since it doesn't consume construct refs from apiStack
 frontendStack.addDependency(apiStack);
 
 // App-level tags

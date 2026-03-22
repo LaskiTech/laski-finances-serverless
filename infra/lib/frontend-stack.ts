@@ -1,6 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
-import * as route53 from 'aws-cdk-lib/aws-route53';
 import { Construct } from 'constructs';
 import { Environment } from '../config/environments';
 import { ProjectConfig } from '../config/project-config';
@@ -20,26 +19,44 @@ export class FrontendStack extends cdk.Stack {
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'frontend-stack');
 
-    // Amplify App (L1 construct for stability)
+    // Amplify App (L1 construct for stability) with Vite build settings
     const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
       name: `${prefix}-frontend-${stage}`,
+      buildSpec: cdk.Fn.sub(JSON.stringify({
+        version: 1,
+        applications: [
+          {
+            frontend: {
+              phases: {
+                preBuild: { commands: ['npm ci'] },
+                build: { commands: ['npm run build'] },
+              },
+              artifacts: {
+                baseDirectory: 'dist',
+                files: ['**/*'],
+              },
+              cache: { paths: ['node_modules/**/*'] },
+            },
+            appRoot: 'front',
+          },
+        ],
+      })),
     });
 
     // Branch: main
     const mainBranch = new amplify.CfnBranch(this, 'MainBranch', {
       appId: amplifyApp.attrAppId,
       branchName: 'main',
+      framework: 'React',
+      stage: 'PRODUCTION',
     });
 
     // Branch: dev
     const devBranch = new amplify.CfnBranch(this, 'DevBranch', {
       appId: amplifyApp.attrAppId,
       branchName: 'dev',
-    });
-
-    // Look up existing hosted zone — never create a new one
-    const hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
-      domainName: 'kioshitechmuta.link',
+      framework: 'React',
+      stage: 'DEVELOPMENT',
     });
 
     // Custom domain mapping

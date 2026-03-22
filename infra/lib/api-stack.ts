@@ -4,6 +4,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime, RuntimeFamily } from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import { Environment } from '../config/environments';
@@ -12,9 +13,13 @@ import { ProjectConfig } from '../config/project-config';
 export interface ApiStackProps extends cdk.StackProps {
   environment: Environment;
   projectConfig: ProjectConfig;
+  userPool: cognito.IUserPool;
+  ledgerTable: dynamodb.ITable;
 }
 
 export class ApiStack extends cdk.Stack {
+  public readonly restApi: apigateway.RestApi;
+
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
@@ -24,26 +29,34 @@ export class ApiStack extends cdk.Stack {
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'api-stack');
 
-    // REST API (v1) with CORS enabled
-    const restApi = new apigateway.RestApi(this, 'RestApi', {
+    // Access log group for API Gateway
+    const apiLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
+      logGroupName: `/aws/apigateway/${prefix}-api-${stage}`,
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // REST API with CORS, access logging, and throttling
+    this.restApi = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${prefix}-api-${stage}`,
+      deployOptions: {
+        accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
+        throttlingRateLimit: 100,
+        throttlingBurstLimit: 200,
+      },
       defaultCorsPreflightOptions: {
-        allowOrigins: ['*'],
+        allowOrigins: stage === 'prod'
+          ? ['https://appfin.kioshitechmuta.link']
+          : apigateway.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],
       },
     });
 
-    // Import Cognito User Pool from AuthStack export
-    const userPool = cognito.UserPool.fromUserPoolId(
-      this,
-      'ImportedUserPool',
-      cdk.Fn.importValue(`${prefix}-user-pool-id-${stage}`),
-    );
-
-    // Cognito User Pool Authorizer
+    // Cognito User Pool Authorizer (passed via construct reference)
     const cognitoAuthorizer = new apigateway.CognitoUserPoolsAuthorizer(this, 'CognitoAuthorizer', {
-      cognitoUserPools: [userPool],
+      cognitoUserPools: [props.userPool],
     });
 
     // Lambda Function: Create Transaction
@@ -59,29 +72,23 @@ export class ApiStack extends cdk.Stack {
         sourceMap: true,
       },
       environment: {
-        TABLE_NAME: cdk.Fn.importValue(`${prefix}-ledger-table-name-${stage}`),
+        TABLE_NAME: props.ledgerTable.tableName,
       },
     });
 
-    // Grant write permissions on imported DynamoDB table
-    const ledgerTable = dynamodb.Table.fromTableArn(
-      this,
-      'ImportedLedgerTable',
-      cdk.Fn.importValue(`${prefix}-ledger-table-arn-${stage}`),
-    );
-    ledgerTable.grantWriteData(createTransactionHandler);
+    // Grant write permissions via construct reference (least-privilege)
+    props.ledgerTable.grantWriteData(createTransactionHandler);
 
     // /transactions POST resource with Cognito authorizer
-    const transactionsResource = restApi.root.addResource('transactions');
+    const transactionsResource = this.restApi.root.addResource('transactions');
     transactionsResource.addMethod('POST', new apigateway.LambdaIntegration(createTransactionHandler), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
 
-    // Cross-stack export: API URL
+    // Output for external consumers
     new cdk.CfnOutput(this, 'ApiUrl', {
-      value: restApi.url,
-      exportName: `${prefix}-api-url-${stage}`,
+      value: this.restApi.url,
     });
   }
 }

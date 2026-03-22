@@ -2,10 +2,16 @@
   "name": "@laski/infra",
   "version": "1.0.0",
   "scripts": {
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "test": "jest"
   },
   "dependencies": {
     "aws-cdk-lib": "2.244.0",
     "constructs": "10.3.0"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.14",
+    "jest": "29.7.0",
+    "ts-jest": "29.3.4"
   }
 }

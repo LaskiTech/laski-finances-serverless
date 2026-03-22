@@ -10,6 +10,8 @@ export interface DataStackProps extends cdk.StackProps {
 }
 
 export class DataStack extends cdk.Stack {
+  public readonly ledgerTable: dynamodb.Table;
+
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
 
@@ -20,31 +22,27 @@ export class DataStack extends cdk.Stack {
     cdk.Tags.of(this).add('stack', 'data-stack');
 
     // DynamoDB Ledger table
-    const ledgerTable = new dynamodb.Table(this, 'LedgerTable', {
-      tableName: `${prefix}-Ledger`,
+    this.ledgerTable = new dynamodb.Table(this, 'LedgerTable', {
+      tableName: `${prefix}-Ledger-${stage}`,
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      pointInTimeRecovery: true,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      deletionProtection: true,
     });
 
     // GSI for querying by payment source (English field name)
-    ledgerTable.addGlobalSecondaryIndex({
+    this.ledgerTable.addGlobalSecondaryIndex({
       indexName: 'GSI_LookupBySource',
       partitionKey: { name: 'source', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    // Cross-stack exports
+    // Output for external consumers (CLI, debugging)
     new cdk.CfnOutput(this, 'LedgerTableName', {
-      value: ledgerTable.tableName,
-      exportName: `${prefix}-ledger-table-name-${stage}`,
-    });
-
-    new cdk.CfnOutput(this, 'LedgerTableArn', {
-      value: ledgerTable.tableArn,
-      exportName: `${prefix}-ledger-table-arn-${stage}`,
+      value: this.ledgerTable.tableName,
     });
   }
 }
