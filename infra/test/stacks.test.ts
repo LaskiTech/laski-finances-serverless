@@ -141,7 +141,7 @@ describe('ApiStack', () => {
     test('preserves resource counts for REST API, Log Group, Lambda, and Authorizer', () => {
       template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
       template.resourceCountIs('AWS::Logs::LogGroup', 1);
-      template.resourceCountIs('AWS::Lambda::Function', 1);
+      template.resourceCountIs('AWS::Lambda::Function', 5);
       template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
     });
 

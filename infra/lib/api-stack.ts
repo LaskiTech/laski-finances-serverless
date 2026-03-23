@@ -80,9 +80,108 @@ export class ApiStack extends cdk.Stack {
     // Grant write permissions via construct reference (least-privilege)
     props.ledgerTable.grantWriteData(createTransactionHandler);
 
-    // /transactions POST resource with Cognito authorizer
+    // Lambda Function: List Transactions
+    const listTransactionsHandler = new lambda.NodejsFunction(this, 'listTransactionsHandler', {
+      functionName: `${prefix}-listTransactions`,
+      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/list-transactions.ts'),
+      handler: 'handler',
+      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        TABLE_NAME: props.ledgerTable.tableName,
+      },
+    });
+
+    props.ledgerTable.grantReadData(listTransactionsHandler);
+
+    // Lambda Function: Get Transaction
+    const getTransactionHandler = new lambda.NodejsFunction(this, 'getTransactionHandler', {
+      functionName: `${prefix}-getTransaction`,
+      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/get-transaction.ts'),
+      handler: 'handler',
+      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        TABLE_NAME: props.ledgerTable.tableName,
+      },
+    });
+
+    props.ledgerTable.grantReadData(getTransactionHandler);
+
+    // Lambda Function: Update Transaction
+    const updateTransactionHandler = new lambda.NodejsFunction(this, 'updateTransactionHandler', {
+      functionName: `${prefix}-updateTransaction`,
+      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/update-transaction.ts'),
+      handler: 'handler',
+      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        TABLE_NAME: props.ledgerTable.tableName,
+      },
+    });
+
+    props.ledgerTable.grantReadWriteData(updateTransactionHandler);
+
+    // Lambda Function: Delete Transaction
+    const deleteTransactionHandler = new lambda.NodejsFunction(this, 'deleteTransactionHandler', {
+      functionName: `${prefix}-deleteTransaction`,
+      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/delete-transaction.ts'),
+      handler: 'handler',
+      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        TABLE_NAME: props.ledgerTable.tableName,
+      },
+    });
+
+    props.ledgerTable.grantReadWriteData(deleteTransactionHandler);
+
+    // /transactions resource with POST and GET methods
     const transactionsResource = this.restApi.root.addResource('transactions');
     transactionsResource.addMethod('POST', new apigateway.LambdaIntegration(createTransactionHandler), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    transactionsResource.addMethod('GET', new apigateway.LambdaIntegration(listTransactionsHandler), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // /transactions/{sk} resource with GET, PUT, DELETE methods
+    const transactionBySkResource = transactionsResource.addResource('{sk}');
+
+    transactionBySkResource.addMethod('GET', new apigateway.LambdaIntegration(getTransactionHandler), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    transactionBySkResource.addMethod('PUT', new apigateway.LambdaIntegration(updateTransactionHandler), {
+      authorizer: cognitoAuthorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    transactionBySkResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteTransactionHandler), {
       authorizer: cognitoAuthorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });

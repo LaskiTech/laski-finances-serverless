@@ -12,6 +12,8 @@ inclusion: always
   - Prefer stable constructs from `aws-cdk-lib` over alpha packages whenever possible
 - `package-lock.json` MUST be committed to git — never gitignored
 - All developers MUST use `npm ci` (not `npm install`) to install dependencies, ensuring the lockfile is respected
+- `npm ci` MUST always be executed from the project root directory — NEVER from individual workspace folders (`back/`, `infra/`). The root `package.json` manages all workspaces via npm workspaces, so running `npm ci` at the root installs dependencies for all workspaces at once
+- The only exception is `front/` — Amplify Hosting runs `npm ci` inside the `front/` folder during its build process, so `npm ci` in `front/` is allowed
 - Version upgrades are intentional changes — they require a dedicated task or feature, not a side-effect of other work
 - When upgrading a dependency, update ALL workspaces that reference it in the same commit
 - Node.js version should be enforced via `.nvmrc` file at the repo root (e.g., `22`)

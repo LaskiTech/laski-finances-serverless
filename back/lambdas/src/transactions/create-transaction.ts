@@ -2,54 +2,31 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
+import { CreateTransactionSchema } from "./schemas";
+import { extractUserId, errorResponse, successResponse, parseJsonBody } from "./utils";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME!;
 
-// Zod schema for transaction input validation
-const CreateTransactionSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  totalAmount: z.number().positive("Total amount must be positive"),
-  installments: z.number().int().min(1, "Installments must be an integer >= 1").default(1),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
-  category: z.string().min(1, "Category is required"),
-  source: z.string().min(1, "Source is required"),
-  type: z.enum(["INC", "EXP"], { message: "Invalid transaction type. Must be INC or EXP" }),
-});
-
-type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>;
-
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   try {
-    const userId = event.requestContext.authorizer?.claims?.sub;
+    const userId = extractUserId(event);
 
     if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized" }),
-      };
+      return errorResponse(401, "Unauthorized");
     }
 
-    let rawBody: unknown;
-    try {
-      rawBody = JSON.parse(event.body || "");
-    } catch {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid request body" }),
-      };
+    const rawBody = parseJsonBody(event.body);
+    if (rawBody === null) {
+      return errorResponse(400, "Invalid request body");
     }
 
     // Validate input with Zod
     const parsed = CreateTransactionSchema.safeParse(rawBody);
     if (!parsed.success) {
       const errors = parsed.error.issues.map((issue) => issue.message);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Validation failed", details: errors }),
-      };
+      return errorResponse(400, "Validation failed", errors);
     }
 
     const { description, totalAmount, installments, date, category, source, type } = parsed.data;
@@ -84,12 +61,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }));
     }
 
-    return {
-      statusCode: 201,
-      body: JSON.stringify({ message: "Transaction(s) created successfully" }),
-    };
+    return successResponse(201, { message: "Transaction(s) created successfully" });
   } catch (error) {
     console.error(error);
-    return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
+    return errorResponse(500, "Internal server error");
   }
 };
