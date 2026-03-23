@@ -51,7 +51,7 @@ inclusion: always
 - Always set explicit `memorySize`, `timeout`, and `runtime`
 - Use `Runtime.NODEJS_22_X` for Lambda runtime (available in all regions)
 - Follow least-privilege IAM: use `grantReadData`, `grantWriteData` instead of broad policies
-- Environment-specific naming: append `${stage}` to resource names
+- Do NOT append the stage/environment name (e.g., `-dev`, `-prod`) to resource names (DynamoDB tables, Lambda functions, API Gateway endpoints, etc.). CDK already isolates environments via separate stacks and accounts — stage suffixes in resource names add unnecessary complexity, especially in Lambda code that would need to resolve names dynamically. Use fixed, predictable resource names (e.g., `laskifin-Ledger`, not `laskifin-Ledger-dev`)
 - Use `path.resolve(__dirname, ...)` for Lambda entry paths
 - DynamoDB tables use `PAY_PER_REQUEST` billing mode
 - Enable `pointInTimeRecovery` on all tables

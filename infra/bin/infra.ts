@@ -16,24 +16,23 @@ if (!envConfig) {
 }
 
 const prefix = projectConfig.prefixNameResources;
-const stage = envConfig.stage;
 const cdkEnv = { account: envConfig.account, region: envConfig.region };
 
-const authStack = new AuthStack(app, `${prefix}-auth-stack-${stage}`, {
+const authStack = new AuthStack(app, `${prefix}-auth-stack`, {
   environment: envConfig,
   projectConfig,
   env: cdkEnv,
-  terminationProtection: stage === 'prod',
+  terminationProtection: envConfig.stage === 'prod',
 });
 
-const dataStack = new DataStack(app, `${prefix}-data-stack-${stage}`, {
+const dataStack = new DataStack(app, `${prefix}-data-stack`, {
   environment: envConfig,
   projectConfig,
   env: cdkEnv,
   terminationProtection: true,
 });
 
-const apiStack = new ApiStack(app, `${prefix}-api-stack-${stage}`, {
+const apiStack = new ApiStack(app, `${prefix}-api-stack`, {
   environment: envConfig,
   projectConfig,
   env: cdkEnv,
@@ -41,7 +40,7 @@ const apiStack = new ApiStack(app, `${prefix}-api-stack-${stage}`, {
   ledgerTable: dataStack.ledgerTable,
 });
 
-const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack-${stage}`, {
+const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack`, {
   environment: envConfig,
   projectConfig,
   env: cdkEnv,

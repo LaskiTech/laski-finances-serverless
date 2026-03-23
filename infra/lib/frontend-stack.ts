@@ -14,14 +14,13 @@ export class FrontendStack extends cdk.Stack {
     super(scope, id, props);
 
     const prefix = props.projectConfig.prefixNameResources;
-    const stage = props.environment.stage;
 
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'frontend-stack');
 
     // Amplify App (L1 construct for stability) with Vite build settings
     const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
-      name: `${prefix}-frontend-${stage}`,
+      name: `${prefix}-frontend`,
       buildSpec: cdk.Fn.sub(JSON.stringify({
         version: 1,
         applications: [

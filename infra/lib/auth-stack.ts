@@ -17,14 +17,13 @@ export class AuthStack extends cdk.Stack {
     super(scope, id, props);
 
     const prefix = props.projectConfig.prefixNameResources;
-    const stage = props.environment.stage;
 
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'auth-stack');
 
     // Cognito User Pool
     const userPool = new cognito.UserPool(this, 'UserPool', {
-      userPoolName: `${prefix}-user-pool-${stage}`,
+      userPoolName: `${prefix}-user-pool`,
       selfSignUpEnabled: true,
       signInAliases: { email: true },
       passwordPolicy: {
@@ -41,7 +40,7 @@ export class AuthStack extends cdk.Stack {
     // User Pool Client
     const userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
       userPool,
-      userPoolClientName: `${prefix}-web-client-${stage}`,
+      userPoolClientName: `${prefix}-web-client`,
       authFlows: {
         userSrp: true,
         userPassword: true,
@@ -53,7 +52,7 @@ export class AuthStack extends cdk.Stack {
     new cognito.UserPoolDomain(this, 'UserPoolDomain', {
       userPool,
       cognitoDomain: {
-        domainPrefix: `${prefix}-auth-${stage}`,
+        domainPrefix: `${prefix}-auth`,
       },
     });
 

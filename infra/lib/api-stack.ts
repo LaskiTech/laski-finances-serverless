@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime, RuntimeFamily } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
@@ -31,14 +32,14 @@ export class ApiStack extends cdk.Stack {
 
     // Access log group for API Gateway
     const apiLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
-      logGroupName: `/aws/apigateway/${prefix}-api-${stage}`,
+      logGroupName: `/aws/apigateway/${prefix}-api`,
       retention: logs.RetentionDays.ONE_MONTH,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // REST API with CORS, access logging, and throttling
     this.restApi = new apigateway.RestApi(this, 'RestApi', {
-      restApiName: `${prefix}-api-${stage}`,
+      restApiName: `${prefix}-api`,
       deployOptions: {
         accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
         accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
@@ -61,7 +62,7 @@ export class ApiStack extends cdk.Stack {
 
     // Lambda Function: Create Transaction
     const createTransactionHandler = new lambda.NodejsFunction(this, 'createTransactionHandler', {
-      functionName: `${prefix}-createTransaction-${stage}`,
+      functionName: `${prefix}-createTransaction`,
       entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/create-transaction.ts'),
       handler: 'handler',
       runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
@@ -90,5 +91,21 @@ export class ApiStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: this.restApi.url,
     });
+
+    // IAM role for API Gateway to push logs to CloudWatch
+    const apiGatewayCloudWatchRole: iam.Role = new iam.Role(this, 'ApiGatewayCloudWatchRole', {
+      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonAPIGatewayPushToCloudWatchLogs'),
+      ],
+    });
+
+    // Account-level setting: register the CloudWatch role for API Gateway
+    const apiGatewayAccount: apigateway.CfnAccount = new apigateway.CfnAccount(this, 'ApiGatewayAccount', {
+      cloudWatchRoleArn: apiGatewayCloudWatchRole.roleArn,
+    });
+
+    // Ensure the account-level logging config is created before the API stage
+    this.restApi.deploymentStage.node.addDependency(apiGatewayAccount);
   }
 }

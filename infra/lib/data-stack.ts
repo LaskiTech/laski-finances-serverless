@@ -16,14 +16,13 @@ export class DataStack extends cdk.Stack {
     super(scope, id, props);
 
     const prefix = props.projectConfig.prefixNameResources;
-    const stage = props.environment.stage;
 
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'data-stack');
 
     // DynamoDB Ledger table
     this.ledgerTable = new dynamodb.Table(this, 'LedgerTable', {
-      tableName: `${prefix}-Ledger-${stage}`,
+      tableName: `${prefix}-Ledger`,
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,

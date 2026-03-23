@@ -109,6 +109,13 @@ All AWS resources created via CDK must be tagged for observability, cost trackin
 - `prod`: us-west-1
 - Environment is selected via CDK context: `-c env=dev`
 
+### Resource Naming
+
+- Resource names (DynamoDB tables, Lambda functions, API Gateway endpoints, etc.) must NOT include the stage/environment suffix (e.g., use `laskifin-Ledger`, not `laskifin-Ledger-dev`)
+- Environment isolation is handled by CDK through separate stacks and AWS accounts/regions — not by name suffixes
+- This keeps Lambda code simple: table names and endpoints are fixed constants, no dynamic resolution needed
+- Tags (specifically the `environment` tag) are used to distinguish resources across environments, not resource names
+
 ## Frontend Stack
 
 - **Framework**: React + TypeScript, built with Vite
