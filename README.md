@@ -89,6 +89,46 @@ npx cdk deploy --all -c env=dev
 npx cdk deploy AuthStack -c env=dev
 ```
 
+## Frontend Deploy (Amplify)
+
+Since the Amplify app has no Git repo connected, deploys are done manually via CLI.
+
+### Prerequisites
+
+1. Create `front/.env` with your Cognito values (see `front/.env.example`):
+
+```
+VITE_COGNITO_USER_POOL_ID=us-west-2_XXXXXXXX
+VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+2. Set the `AMPLIFY_APP_ID` environment variable:
+
+```bash
+export AMPLIFY_APP_ID=<your-app-id>
+```
+
+### Deploy with script
+
+```bash
+bash scripts/deploy-front.sh
+```
+
+To deploy to a specific branch:
+
+```bash
+AMPLIFY_BRANCH=main bash scripts/deploy-front.sh
+```
+
+### Check deployment status
+
+```bash
+aws amplify get-job --app-id <your-app-id> --branch-name dev --job-id <jobId>
+```
+
+> If a previous deployment is stuck, stop it first:
+> `aws amplify stop-job --app-id <your-app-id> --branch-name dev --job-id <jobId>`
+
 ## Environments
 
 | Environment | Region | Domain |

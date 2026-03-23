@@ -17,6 +17,7 @@ build/
 
 # Frontend (Vite/React)
 front/**/dist/
+deploy.zip
 
 # Environment variables
 .env
