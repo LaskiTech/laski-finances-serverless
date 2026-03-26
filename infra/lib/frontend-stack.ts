@@ -7,6 +7,7 @@ import { ProjectConfig } from '../config/project-config';
 export interface FrontendStackProps extends cdk.StackProps {
   environment: Environment;
   projectConfig: ProjectConfig;
+  apiUrl: string;
 }
 
 export class FrontendStack extends cdk.Stack {
@@ -48,6 +49,7 @@ export class FrontendStack extends cdk.Stack {
       branchName: 'main',
       framework: 'React',
       stage: 'PRODUCTION',
+      environmentVariables: [{ name: 'VITE_API_URL', value: props.apiUrl }],
     });
 
     // Branch: dev
@@ -56,6 +58,7 @@ export class FrontendStack extends cdk.Stack {
       branchName: 'dev',
       framework: 'React',
       stage: 'DEVELOPMENT',
+      environmentVariables: [{ name: 'VITE_API_URL', value: props.apiUrl }],
     });
 
     // Custom domain mapping

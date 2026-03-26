@@ -44,11 +44,8 @@ const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack`, {
   environment: envConfig,
   projectConfig,
   env: cdkEnv,
+  apiUrl: apiStack.restApi.url,
 });
-
-// Dependencies are now automatic via construct references (authStack → apiStack, dataStack → apiStack)
-// Only frontendStack needs explicit dependency since it doesn't consume construct refs from apiStack
-frontendStack.addDependency(apiStack);
 
 // App-level tags
 cdk.Tags.of(app).add('project', projectConfig.appName);

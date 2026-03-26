@@ -287,6 +287,7 @@ describe('FrontendStack', () => {
     environment: testEnv,
     projectConfig: testConfig,
     env: cdkEnv,
+    apiUrl: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
   });
   const template = Template.fromStack(stack);
 
@@ -311,6 +312,123 @@ describe('FrontendStack', () => {
   test('creates custom domain', () => {
     template.hasResourceProperties('AWS::Amplify::Domain', {
       DomainName: 'kioshitechmuta.link',
+    });
+  });
+
+  // Preservation Property Test — Property 2: Existing FrontendStack Resources Unchanged
+  // **Validates: Requirements 3.1, 3.2, 3.3, 3.5**
+  // Observation-first methodology: all values observed on UNFIXED code and asserted to detect regressions.
+  describe('Preservation: existing FrontendStack resources unchanged', () => {
+    test('preserves resource counts: 1 App, 2 Branches, 1 Domain', () => {
+      template.resourceCountIs('AWS::Amplify::App', 1);
+      template.resourceCountIs('AWS::Amplify::Branch', 2);
+      template.resourceCountIs('AWS::Amplify::Domain', 1);
+    });
+
+    test('preserves app naming: laskifin-frontend', () => {
+      template.hasResourceProperties('AWS::Amplify::App', {
+        Name: 'laskifin-frontend',
+      });
+    });
+
+    test('preserves buildSpec: Vite build phases with npm ci, npm run build, dist artifacts, front appRoot', () => {
+      const templateJson = template.toJSON();
+      const resources = templateJson.Resources;
+
+      // Find the Amplify App resource
+      const appLogicalId = Object.keys(resources).find(
+        (key) => resources[key].Type === 'AWS::Amplify::App'
+      );
+      expect(appLogicalId).toBeDefined();
+
+      const buildSpecRaw = resources[appLogicalId!].Properties.BuildSpec;
+      // BuildSpec uses Fn::Sub, so extract the string from the Sub intrinsic
+      const buildSpecStr = typeof buildSpecRaw === 'string'
+        ? buildSpecRaw
+        : buildSpecRaw['Fn::Sub'] || JSON.stringify(buildSpecRaw);
+      const buildSpec = JSON.parse(buildSpecStr);
+
+      // Assert Vite build phases
+      const app = buildSpec.applications[0];
+      expect(app.frontend.phases.preBuild.commands).toEqual(['npm ci']);
+      expect(app.frontend.phases.build.commands).toEqual(['npm run build']);
+      expect(app.frontend.artifacts.baseDirectory).toBe('dist');
+      expect(app.frontend.artifacts.files).toEqual(['**/*']);
+      expect(app.appRoot).toBe('front');
+    });
+
+    test('preserves domain mapping: appfin/main and devfin/dev on kioshitechmuta.link', () => {
+      template.hasResourceProperties('AWS::Amplify::Domain', {
+        DomainName: 'kioshitechmuta.link',
+        SubDomainSettings: Match.arrayWith([
+          Match.objectLike({ BranchName: 'main', Prefix: 'appfin' }),
+          Match.objectLike({ BranchName: 'dev', Prefix: 'devfin' }),
+        ]),
+      });
+    });
+
+    test('preserves branch config: main PRODUCTION and dev DEVELOPMENT', () => {
+      template.hasResourceProperties('AWS::Amplify::Branch', {
+        BranchName: 'main',
+        Stage: 'PRODUCTION',
+        Framework: 'React',
+      });
+      template.hasResourceProperties('AWS::Amplify::Branch', {
+        BranchName: 'dev',
+        Stage: 'DEVELOPMENT',
+        Framework: 'React',
+      });
+    });
+
+    test('preserves front/.env: VITE_COGNITO_USER_POOL_ID and VITE_COGNITO_USER_POOL_CLIENT_ID entries exist', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const envPath = path.resolve(__dirname, '../../front/.env');
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+
+      expect(envContent).toContain('VITE_COGNITO_USER_POOL_ID');
+      expect(envContent).toContain('VITE_COGNITO_USER_POOL_CLIENT_ID');
+    });
+  });
+});
+
+// Bug Condition Exploration Test — Property 1: Amplify Branches Missing VITE_API_URL
+// **Validates: Requirements 1.3, 1.4, 2.3, 2.4**
+// This test encodes the EXPECTED behavior after the fix.
+// It MUST FAIL on unfixed code — failure confirms the bug exists.
+describe('Bug Condition: Amplify branches receive VITE_API_URL', () => {
+  const app = new cdk.App();
+  const stack = new FrontendStack(app, 'TestFrontendStackWithApiUrl', {
+    environment: testEnv,
+    projectConfig: testConfig,
+    env: cdkEnv,
+    apiUrl: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+  });
+  const template = Template.fromStack(stack);
+
+  test('MainBranch (PRODUCTION) has VITE_API_URL environment variable', () => {
+    template.hasResourceProperties('AWS::Amplify::Branch', {
+      BranchName: 'main',
+      Stage: 'PRODUCTION',
+      EnvironmentVariables: Match.arrayWith([
+        Match.objectLike({
+          Name: 'VITE_API_URL',
+          Value: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+        }),
+      ]),
+    });
+  });
+
+  test('DevBranch (DEVELOPMENT) has VITE_API_URL environment variable', () => {
+    template.hasResourceProperties('AWS::Amplify::Branch', {
+      BranchName: 'dev',
+      Stage: 'DEVELOPMENT',
+      EnvironmentVariables: Match.arrayWith([
+        Match.objectLike({
+          Name: 'VITE_API_URL',
+          Value: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+        }),
+      ]),
     });
   });
 });

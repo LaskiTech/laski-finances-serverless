@@ -10,6 +10,12 @@ export const extractUserId = (event: APIGatewayProxyEvent): string | null => {
 /**
  * Builds a standard error response with JSON body.
  */
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+};
+
 export const errorResponse = (
   statusCode: number,
   message: string,
@@ -21,6 +27,7 @@ export const errorResponse = (
   }
   return {
     statusCode,
+    headers: corsHeaders,
     body: JSON.stringify(body),
   };
 };
@@ -34,6 +41,7 @@ export const successResponse = (
 ): APIGatewayProxyResult => {
   return {
     statusCode,
+    headers: corsHeaders,
     body: JSON.stringify(body),
   };
 };
