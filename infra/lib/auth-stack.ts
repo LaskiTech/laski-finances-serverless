@@ -46,6 +46,8 @@ export class AuthStack extends cdk.Stack {
         userPassword: true,
       },
       generateSecret: false,
+      accessTokenValidity: cdk.Duration.days(1),
+      idTokenValidity: cdk.Duration.days(1),
     });
 
     // User Pool Domain

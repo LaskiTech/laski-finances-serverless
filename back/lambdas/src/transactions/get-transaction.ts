@@ -1,7 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { extractUserId, errorResponse, successResponse } from "./utils";
+import { extractUserId, errorResponse, successResponse, decodeSk } from "./utils";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -21,11 +21,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return errorResponse(400, "Missing transaction key");
     }
 
+    const decodedSk = decodeSk(sk);
+
     const result = await docClient.send(new GetCommand({
       TableName: TABLE_NAME,
       Key: {
         pk: `USER#${userId}`,
-        sk,
+        sk: decodedSk,
       },
     }));
 

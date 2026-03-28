@@ -1,6 +1,19 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
 /**
+ * Decodes a URL-encoded sort key (`sk`) path parameter.
+ *
+ * API Gateway REST API (v1) does not fully decode percent-encoded characters
+ * like `%23` (which represents `#`) in path parameters. Since transaction sort
+ * keys contain `#` (e.g., `TRANS#2026-03#EXP#<uuid>`), the frontend correctly
+ * encodes them as `%23`, but the Lambda handler must decode them before using
+ * the value in DynamoDB lookups.
+ *
+ * This is a no-op for strings that contain no percent-encoded sequences.
+ */
+export const decodeSk = (sk: string): string => decodeURIComponent(sk);
+
+/**
  * Extracts the Cognito user ID (sub) from the API Gateway event's authorizer claims.
  */
 export const extractUserId = (event: APIGatewayProxyEvent): string | null => {

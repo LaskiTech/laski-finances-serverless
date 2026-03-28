@@ -1,10 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { AppLayout } from "../components/AppLayout";
 import { LoginPage } from "../pages/LoginPage";
 import { SignUpPage } from "../pages/SignUpPage";
 import { ConfirmSignUpPage } from "../pages/ConfirmSignUpPage";
 import { PasswordRecoveryPage } from "../pages/PasswordRecoveryPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
+import { DashboardPage } from "../pages/DashboardPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
 import { TransactionFormPage } from "../pages/TransactionFormPage";
 
@@ -18,39 +20,20 @@ export function AppRoutes(): React.JSX.Element {
       <Route path="/forgot-password" element={<PasswordRecoveryPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-      {/* Protected routes */}
+      {/* Protected routes wrapped in AppLayout */}
       <Route
-        path="/"
         element={
           <ProtectedRoute>
-            <Navigate to="/transactions" replace />
+            <AppLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <TransactionsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transactions/new"
-        element={
-          <ProtectedRoute>
-            <TransactionFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transactions/edit/:sk"
-        element={
-          <ProtectedRoute>
-            <TransactionFormPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/transactions/new" element={<TransactionFormPage />} />
+        <Route path="/transactions/edit/:sk" element={<TransactionFormPage />} />
+      </Route>
     </Routes>
   );
 }

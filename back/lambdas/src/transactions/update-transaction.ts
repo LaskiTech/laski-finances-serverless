@@ -2,7 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { UpdateTransactionSchema } from "./schemas";
-import { extractUserId, errorResponse, successResponse, parseJsonBody } from "./utils";
+import { extractUserId, errorResponse, successResponse, parseJsonBody, decodeSk } from "./utils";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -22,6 +22,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return errorResponse(400, "Missing transaction key");
     }
 
+    const decodedSk = decodeSk(sk);
+
     const rawBody = parseJsonBody(event.body);
     if (rawBody === null) {
       return errorResponse(400, "Invalid request body");
@@ -39,13 +41,14 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       TableName: TABLE_NAME,
       Key: {
         pk: `USER#${userId}`,
-        sk,
+        sk: decodedSk,
       },
       ConditionExpression: "attribute_exists(pk)",
-      UpdateExpression: "SET description = :description, amount = :amount, #date = :date, #type = :type, source = :source, category = :category",
+      UpdateExpression: "SET description = :description, amount = :amount, #date = :date, #type = :type, #source = :source, category = :category",
       ExpressionAttributeNames: {
         "#date": "date",
         "#type": "type",
+        "#source": "source",
       },
       ExpressionAttributeValues: {
         ":description": description,

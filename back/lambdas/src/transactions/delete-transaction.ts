@@ -7,7 +7,7 @@ import {
   BatchWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { extractUserId, errorResponse, successResponse } from "./utils";
+import { extractUserId, errorResponse, successResponse, decodeSk } from "./utils";
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -86,14 +86,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return errorResponse(400, "Missing transaction key");
     }
 
+    const decodedSk = decodeSk(sk);
     const pk = `USER#${userId}`;
     const isGroupDelete = event.queryStringParameters?.deleteGroup === "true";
 
     if (isGroupDelete) {
-      return await deleteGroup(pk, sk);
+      return await deleteGroup(pk, decodedSk);
     }
 
-    return await deleteSingle(pk, sk);
+    return await deleteSingle(pk, decodedSk);
   } catch (error) {
     console.error(error);
     return errorResponse(500, "Internal server error");
