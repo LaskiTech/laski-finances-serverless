@@ -2,9 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
-import { Runtime, RuntimeFamily } from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
 import { Construct } from 'constructs';
@@ -26,8 +25,7 @@ export class ApiStack extends cdk.Stack {
 
     const prefix = props.projectConfig.prefixNameResources;
     const stage = props.environment.stage;
-    const prodOrigin = 'https://appfin.kioshitechmuta.link';
-    const corsOrigin = stage === 'prod' ? prodOrigin : '*';
+    const corsOrigin = stage === 'prod' ? props.environment.frontendUrl : '*';
 
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'api-stack');
@@ -39,9 +37,10 @@ export class ApiStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // REST API with CORS, access logging, and throttling
+    // REST API with CORS, access logging, throttling, and managed CloudWatch role
     this.restApi = new apigateway.RestApi(this, 'RestApi', {
       restApiName: `${prefix}-api`,
+      cloudWatchRole: true,
       deployOptions: {
         accessLogDestination: new apigateway.LogGroupLogDestination(apiLogGroup),
         accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields(),
@@ -50,7 +49,7 @@ export class ApiStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: stage === 'prod'
-          ? [prodOrigin]
+          ? [props.environment.frontendUrl]
           : apigateway.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],
@@ -62,156 +61,107 @@ export class ApiStack extends cdk.Stack {
       cognitoUserPools: [props.userPool],
     });
 
-    // Lambda Function: Create Transaction
-    const createTransactionHandler = new lambda.NodejsFunction(this, 'createTransactionHandler', {
-      functionName: `${prefix}-createTransaction`,
-      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/create-transaction.ts'),
-      handler: 'handler',
-      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-      bundling: {
-        minify: true,
-        sourceMap: true,
-      },
-      environment: {
-        TABLE_NAME: props.ledgerTable.tableName,
-        CORS_ORIGIN: corsOrigin,
-      },
-    });
-
-    // Grant write permissions via construct reference (least-privilege)
+    // Lambda Functions: CRUD Transactions
+    const createTransactionHandler = this.makeLambda(
+      'createTransactionHandler',
+      `${prefix}-createTransaction`,
+      path.resolve(__dirname, '../../back/lambdas/src/transactions/create-transaction.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
     props.ledgerTable.grantWriteData(createTransactionHandler);
 
-    // Lambda Function: List Transactions
-    const listTransactionsHandler = new lambda.NodejsFunction(this, 'listTransactionsHandler', {
-      functionName: `${prefix}-listTransactions`,
-      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/list-transactions.ts'),
-      handler: 'handler',
-      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-      bundling: {
-        minify: true,
-        sourceMap: true,
-      },
-      environment: {
-        TABLE_NAME: props.ledgerTable.tableName,
-        CORS_ORIGIN: corsOrigin,
-      },
-    });
-
+    const listTransactionsHandler = this.makeLambda(
+      'listTransactionsHandler',
+      `${prefix}-listTransactions`,
+      path.resolve(__dirname, '../../back/lambdas/src/transactions/list-transactions.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
     props.ledgerTable.grantReadData(listTransactionsHandler);
 
-    // Lambda Function: Get Transaction
-    const getTransactionHandler = new lambda.NodejsFunction(this, 'getTransactionHandler', {
-      functionName: `${prefix}-getTransaction`,
-      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/get-transaction.ts'),
-      handler: 'handler',
-      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-      bundling: {
-        minify: true,
-        sourceMap: true,
-      },
-      environment: {
-        TABLE_NAME: props.ledgerTable.tableName,
-        CORS_ORIGIN: corsOrigin,
-      },
-    });
-
+    const getTransactionHandler = this.makeLambda(
+      'getTransactionHandler',
+      `${prefix}-getTransaction`,
+      path.resolve(__dirname, '../../back/lambdas/src/transactions/get-transaction.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
     props.ledgerTable.grantReadData(getTransactionHandler);
 
-    // Lambda Function: Update Transaction
-    const updateTransactionHandler = new lambda.NodejsFunction(this, 'updateTransactionHandler', {
-      functionName: `${prefix}-updateTransaction`,
-      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/update-transaction.ts'),
-      handler: 'handler',
-      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-      bundling: {
-        minify: true,
-        sourceMap: true,
-      },
-      environment: {
-        TABLE_NAME: props.ledgerTable.tableName,
-        CORS_ORIGIN: corsOrigin,
-      },
-    });
-
+    const updateTransactionHandler = this.makeLambda(
+      'updateTransactionHandler',
+      `${prefix}-updateTransaction`,
+      path.resolve(__dirname, '../../back/lambdas/src/transactions/update-transaction.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
     props.ledgerTable.grantReadWriteData(updateTransactionHandler);
 
-    // Lambda Function: Delete Transaction
-    const deleteTransactionHandler = new lambda.NodejsFunction(this, 'deleteTransactionHandler', {
-      functionName: `${prefix}-deleteTransaction`,
-      entry: path.resolve(__dirname, '../../back/lambdas/src/transactions/delete-transaction.ts'),
-      handler: 'handler',
-      runtime: new Runtime('nodejs22.x', RuntimeFamily.NODEJS),
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(10),
-      bundling: {
-        minify: true,
-        sourceMap: true,
-      },
-      environment: {
-        TABLE_NAME: props.ledgerTable.tableName,
-        CORS_ORIGIN: corsOrigin,
-      },
-    });
-
+    const deleteTransactionHandler = this.makeLambda(
+      'deleteTransactionHandler',
+      `${prefix}-deleteTransaction`,
+      path.resolve(__dirname, '../../back/lambdas/src/transactions/delete-transaction.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
     props.ledgerTable.grantReadWriteData(deleteTransactionHandler);
 
     // /transactions resource with POST and GET methods
     const transactionsResource = this.restApi.root.addResource('transactions');
-    transactionsResource.addMethod('POST', new apigateway.LambdaIntegration(createTransactionHandler), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    });
-
-    transactionsResource.addMethod('GET', new apigateway.LambdaIntegration(listTransactionsHandler), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    });
+    this.cognitoMethod(transactionsResource, 'POST', createTransactionHandler, cognitoAuthorizer);
+    this.cognitoMethod(transactionsResource, 'GET', listTransactionsHandler, cognitoAuthorizer);
 
     // /transactions/{sk} resource with GET, PUT, DELETE methods
     const transactionBySkResource = transactionsResource.addResource('{sk}');
-
-    transactionBySkResource.addMethod('GET', new apigateway.LambdaIntegration(getTransactionHandler), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    });
-
-    transactionBySkResource.addMethod('PUT', new apigateway.LambdaIntegration(updateTransactionHandler), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    });
-
-    transactionBySkResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteTransactionHandler), {
-      authorizer: cognitoAuthorizer,
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-    });
+    this.cognitoMethod(transactionBySkResource, 'GET', getTransactionHandler, cognitoAuthorizer);
+    this.cognitoMethod(transactionBySkResource, 'PUT', updateTransactionHandler, cognitoAuthorizer);
+    this.cognitoMethod(transactionBySkResource, 'DELETE', deleteTransactionHandler, cognitoAuthorizer);
 
     // Output for external consumers
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: this.restApi.url,
     });
+  }
 
-    // IAM role for API Gateway to push logs to CloudWatch
-    const apiGatewayCloudWatchRole: iam.Role = new iam.Role(this, 'ApiGatewayCloudWatchRole', {
-      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonAPIGatewayPushToCloudWatchLogs'),
-      ],
+  private makeLambda(
+    id: string,
+    functionName: string,
+    entry: string,
+    corsOrigin: string,
+    tableName: string,
+  ): lambda.NodejsFunction {
+    return new lambda.NodejsFunction(this, id, {
+      functionName,
+      entry,
+      handler: 'handler',
+      runtime: Runtime.NODEJS_22_X,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        TABLE_NAME: tableName,
+        CORS_ORIGIN: corsOrigin,
+      },
     });
+  }
 
-    // Account-level setting: register the CloudWatch role for API Gateway
-    const apiGatewayAccount: apigateway.CfnAccount = new apigateway.CfnAccount(this, 'ApiGatewayAccount', {
-      cloudWatchRoleArn: apiGatewayCloudWatchRole.roleArn,
-    });
-
-    // Ensure the account-level logging config is created before the API stage
-    this.restApi.deploymentStage.node.addDependency(apiGatewayAccount);
+  private cognitoMethod(
+    resource: apigateway.Resource,
+    httpMethod: string,
+    handler: lambda.NodejsFunction,
+    authorizer: apigateway.CognitoUserPoolsAuthorizer,
+  ): void {
+    resource.addMethod(
+      httpMethod,
+      new apigateway.LambdaIntegration(handler),
+      {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      },
+    );
   }
 }

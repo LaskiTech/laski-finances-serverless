@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__awslabs-cdk__CDKGeneralGuidance",
+      "mcp__awslabs-cdk__GetAwsSolutionsConstructPattern"
+    ]
+  }
+}

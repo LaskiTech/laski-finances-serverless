@@ -11,6 +11,7 @@ const testEnv: Environment = {
   account: '123456789012',
   region: 'us-west-2',
   stage: 'dev',
+  frontendUrl: 'https://devfin.kioshitechmuta.link',
 };
 
 const testConfig: ProjectConfig = {
