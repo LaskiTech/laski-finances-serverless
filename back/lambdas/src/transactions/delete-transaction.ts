@@ -1,16 +1,12 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
   DeleteCommand,
   GetCommand,
   QueryCommand,
   BatchWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { extractUserId, errorResponse, successResponse, decodeSk } from "./utils";
+import { APIGatewayProxyResult } from "aws-lambda";
+import { docClient, withAuth, errorResponse, successResponse, decodeSk } from "./utils";
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.TABLE_NAME!;
 
 const deleteGroup = async (pk: string, sk: string): Promise<APIGatewayProxyResult> => {
@@ -72,31 +68,20 @@ const deleteSingle = async (pk: string, sk: string): Promise<APIGatewayProxyResu
   }
 };
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  try {
-    const userId = extractUserId(event);
+export const handler = withAuth(async (event, userId) => {
+  const sk = event.pathParameters?.sk;
 
-    if (!userId) {
-      return errorResponse(401, "Unauthorized");
-    }
-
-    const sk = event.pathParameters?.sk;
-
-    if (!sk) {
-      return errorResponse(400, "Missing transaction key");
-    }
-
-    const decodedSk = decodeSk(sk);
-    const pk = `USER#${userId}`;
-    const isGroupDelete = event.queryStringParameters?.deleteGroup === "true";
-
-    if (isGroupDelete) {
-      return await deleteGroup(pk, decodedSk);
-    }
-
-    return await deleteSingle(pk, decodedSk);
-  } catch (error) {
-    console.error(error);
-    return errorResponse(500, "Internal server error");
+  if (!sk) {
+    return errorResponse(400, "Missing transaction key");
   }
-};
+
+  const decodedSk = decodeSk(sk);
+  const pk = `USER#${userId}`;
+  const isGroupDelete = event.queryStringParameters?.deleteGroup === "true";
+
+  if (isGroupDelete) {
+    return deleteGroup(pk, decodedSk);
+  }
+
+  return deleteSingle(pk, decodedSk);
+});

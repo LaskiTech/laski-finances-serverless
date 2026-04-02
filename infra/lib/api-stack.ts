@@ -26,6 +26,8 @@ export class ApiStack extends cdk.Stack {
 
     const prefix = props.projectConfig.prefixNameResources;
     const stage = props.environment.stage;
+    const prodOrigin = 'https://appfin.kioshitechmuta.link';
+    const corsOrigin = stage === 'prod' ? prodOrigin : '*';
 
     // Stack-level tag
     cdk.Tags.of(this).add('stack', 'api-stack');
@@ -48,7 +50,7 @@ export class ApiStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: stage === 'prod'
-          ? ['https://appfin.kioshitechmuta.link']
+          ? [prodOrigin]
           : apigateway.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: ['Content-Type', 'Authorization'],
@@ -74,6 +76,7 @@ export class ApiStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: props.ledgerTable.tableName,
+        CORS_ORIGIN: corsOrigin,
       },
     });
 
@@ -94,6 +97,7 @@ export class ApiStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: props.ledgerTable.tableName,
+        CORS_ORIGIN: corsOrigin,
       },
     });
 
@@ -113,6 +117,7 @@ export class ApiStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: props.ledgerTable.tableName,
+        CORS_ORIGIN: corsOrigin,
       },
     });
 
@@ -132,6 +137,7 @@ export class ApiStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: props.ledgerTable.tableName,
+        CORS_ORIGIN: corsOrigin,
       },
     });
 
@@ -151,6 +157,7 @@ export class ApiStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: props.ledgerTable.tableName,
+        CORS_ORIGIN: corsOrigin,
       },
     });
 

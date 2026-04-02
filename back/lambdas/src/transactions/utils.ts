@@ -1,4 +1,10 @@
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+
+// Shared DynamoDB client singleton — initialized once per Lambda container
+export const dynamoClient = new DynamoDBClient({});
+export const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
 /**
  * Decodes a URL-encoded sort key (`sk`) path parameter.
@@ -24,7 +30,7 @@ export const extractUserId = (event: APIGatewayProxyEvent): string | null => {
  * Builds a standard error response with JSON body.
  */
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.CORS_ORIGIN ?? '*',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
 };
@@ -72,3 +78,46 @@ export const parseJsonBody = (body: string | null): unknown | null => {
     return null;
   }
 };
+
+export interface Logger {
+  info: (message: string, extra?: Record<string, unknown>) => void;
+  error: (message: string, error?: unknown, extra?: Record<string, unknown>) => void;
+}
+
+export const createLogger = (requestId: string, userId: string | null): Logger => ({
+  info: (message, extra = {}) =>
+    console.log(JSON.stringify({ level: 'INFO', requestId, userId, timestamp: new Date().toISOString(), message, ...extra })),
+  error: (message, error, extra = {}) =>
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      requestId,
+      userId,
+      timestamp: new Date().toISOString(),
+      message,
+      error: error instanceof Error ? { name: error.name, message: error.message } : String(error),
+      ...extra,
+    })),
+});
+
+type AuthedHandler = (
+  event: APIGatewayProxyEvent,
+  userId: string,
+  logger: Logger
+) => Promise<APIGatewayProxyResult>;
+
+/**
+ * Wraps a handler with authentication guard and centralized error handling.
+ * Returns 401 if userId is missing, 500 for unhandled exceptions.
+ */
+export const withAuth = (fn: AuthedHandler) =>
+  async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+    const userId = extractUserId(event);
+    if (!userId) return errorResponse(401, "Unauthorized");
+    const logger = createLogger(event.requestContext.requestId, userId);
+    try {
+      return await fn(event, userId, logger);
+    } catch (error) {
+      logger.error("Unhandled exception", error);
+      return errorResponse(500, "Internal server error");
+    }
+  };

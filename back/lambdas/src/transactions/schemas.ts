@@ -35,6 +35,8 @@ export const ListQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}$/, "Month must be in YYYY-MM format")
     .optional(),
   type: z.enum(["INC", "EXP"], { message: "Type must be INC or EXP" }).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50).optional(),
+  lastKey: z.string().optional(), // Base64-encoded DynamoDB LastEvaluatedKey cursor
 });
 
 export type ListQueryInput = z.infer<typeof ListQuerySchema>;
