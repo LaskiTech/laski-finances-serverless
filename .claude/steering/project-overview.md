@@ -12,13 +12,14 @@ A personal finance management platform that gives users a clear view of their fi
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| Login | Cognito-based authentication (email + password) | Infra ready |
-| Expense Tracking | Record and categorize expenses, with installment support | Lambda exists (needs API Gateway) |
-| Income Tracking | Record income entries tied to sources | Not started |
-| Data Queries | Filter/search transactions by month, type, source, category | Not started |
-| Balance Overview | Monthly summary comparing total income vs total expenses | Not started |
-| Top Spending Insights | Highlight top categories and sources by spend amount | Not started |
-| Statement Upload | Upload bank statements (PDF/CSV), extract transactions via text processing | Not started |
+| Login | Cognito-based authentication (email + password + Google federated) | Specced — ready for Claude Code |
+| Expense Tracking | Record and categorize expenses, with installment support | Backend deployed — frontend specced |
+| Income Tracking | Record income entries tied to sources, with recurrence support | Specced — ready for Claude Code |
+| Data Queries | Filter/search transactions by month, type, source, category | Covered by income + expense list endpoints |
+| Balance Overview | Monthly summary reading from pre-aggregated MonthlySummary table | Specced — ready for Claude Code |
+| Top Spending Insights | Ranked categories and sources by spend/income amount | Specced — ready for Claude Code |
+| AI Financial Advisor | Conversational advisor powered by Claude, grounded in user data | Specced — ready for Claude Code |
+| Statement Upload | Upload bank statements (PDF/CSV), extract transactions via text processing | Not started — build last |
 
 ## Business Domain
 
@@ -68,14 +69,16 @@ All code, field names, and API contracts use English. Below is the canonical map
 - **BR5**: Each installment entry must include: `groupId`, `installmentNumber` (1-based), `installmentTotal` (N), and `totalAmount` (original purchase amount) — enabling full context from any single entry without extra queries
 - **BR6**: Transactions can be queried by source via GSI (`GSI_LookupBySource`)
 - **BR7**: User data isolation is enforced by Cognito sub claim in the partition key
+- **BR8**: `category` and `source` are normalised to lowercase and trimmed before being written to DynamoDB — the raw user input is never stored directly
 
 ### Balance & Insights
-- **BR8**: Balance overview = sum of INC - sum of EXP for a given period (month or custom range)
-- **BR9**: Top spending insights rank categories and sources by total EXP amount in a period
-- **BR10**: Balance and insights are computed on-read (no pre-aggregated data for now)
+- **BR9**: Balance overview = `totalIncome - totalExpenses` for a given period, read from the pre-aggregated `laskifin-MonthlySummary` table. The handler never scans `laskifin-Ledger` for balance computation.
+- **BR10**: Every handler that writes to `laskifin-Ledger` must atomically update `laskifin-MonthlySummary` using the shared `updateMonthlySummary()` utility. This is a non-optional side effect — skipping it silently corrupts the balance.
+- **BR11**: The stored `balance` attribute on `laskifin-MonthlySummary` items is not used for reads. Handlers always compute `balance = totalIncome - totalExpenses` from the freshly read fields to avoid race condition artefacts.
+- **BR12**: Top spending insights rank expense categories by `amount` total, computed in Lambda by querying `GSI_MonthlyByCategory`. Top sources rank income sources by `amount` total, computed in Lambda by querying the Ledger with SK prefix `TRANS#YYYY-MM#INC#`.
 
 ### Statement Upload
-- **BR11**: Supported formats: PDF and CSV bank statements
-- **BR12**: Uploaded files are stored in S3, then processed asynchronously
-- **BR13**: Text extraction identifies: date, description, amount, and type (INC/EXP) from each line
-- **BR14**: Extracted transactions are created as draft entries for user review before confirmation
+- **BR13**: Supported formats: PDF and CSV bank statements
+- **BR14**: Uploaded files are stored in S3, then processed asynchronously
+- **BR15**: Text extraction identifies: date, description, amount, and type (INC/EXP) from each line
+- **BR16**: Extracted transactions are created as draft entries for user review before confirmation

@@ -9,6 +9,8 @@
       "Bash(mkdir *)",
       "Bash(touch *)",
       "Bash(cp *)",
+      "Bash(cd *)",
+      "Bash(grep *)",
       "Bash(mv *)",
       "Bash(npx *)",
       "Bash(node *)",

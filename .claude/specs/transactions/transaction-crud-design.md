@@ -355,6 +355,30 @@ const TransactionFormSchema = z.object({
 
 **Validates: Requirements 7.2**
 
+#### Property 16: MonthlySummary totalExpenses reflects all EXP creates
+
+*For any* sequence of `N` EXP entries created via the Create_Handler for a given user and month, the `totalExpenses` in `laskifin-MonthlySummary` for that month must equal the sum of all `amount` values written. No EXP creation may fail to increment `totalExpenses`.
+
+**Validates: Requirements 1.13, Risk R1**
+
+#### Property 17: MonthlySummary remains consistent after update
+
+*For any* existing transaction updated via the Update_Handler with a new `amount`, the `laskifin-MonthlySummary` `totalExpenses` (or `totalIncome`) for the affected month(s) must reflect the net change: old amount removed, new amount added. The running total must equal the sum of all currently-stored entry amounts for that user and month.
+
+**Validates: Requirements 4.10, Risk R1**
+
+#### Property 18: MonthlySummary remains consistent after delete
+
+*For any* transaction deleted via the Delete_Handler, the `laskifin-MonthlySummary` `totalExpenses` (or `totalIncome`) for the affected month must decrease by exactly the deleted entry's `amount`. For group delete of N entries across multiple months, each month's summary must be decremented independently and correctly.
+
+**Validates: Requirements 5.7, Risk R1**
+
+#### Property 19: categoryMonth is always present and normalised
+
+*For any* entry created or updated by a transaction handler, the stored `categoryMonth` must equal `category.trim().toLowerCase() + "#" + YYYY-MM` and the stored `category` must equal `category.trim().toLowerCase()`. Mixed-case or whitespace-padded inputs must never reach DynamoDB.
+
+**Validates: Requirements 1.11, 1.12, 4.8, 4.9, Risk R2, Risk R5**
+
 ## Error Handling
 
 ### Backend Error Strategy
@@ -448,3 +472,144 @@ This feature uses both unit tests and property-based tests for comprehensive cov
 - Verify IAM permissions per handler (read-only, write-only, read-write).
 - Verify TABLE_NAME environment variable is set on all Lambda functions.
 - Verify CORS configuration.
+
+
+---
+
+## Retrofit: Cross-Cutting Side Effects
+
+> **Context**: This section was added after `data-model.md` and `api-contract.md` were finalised. The original design predates the introduction of `laskifin-MonthlySummary` and the `categoryMonth` GSI attribute. The handlers described below must be retrofitted to include these side effects. They are non-optional — omitting them silently corrupts the balance overview and breaks category-based queries for all existing data.
+
+### Side Effect 1 — `categoryMonth` attribute on every Ledger write
+
+Every handler that writes a new item to `laskifin-Ledger` must include the `categoryMonth` composite attribute at write time. This attribute is the sort key of `GSI_MonthlyByCategory` and must be present on every item for category filtering and top-spending insights to work.
+
+**Formula**: `categoryMonth = category.trim().toLowerCase() + "#" + YYYY-MM`
+
+where `YYYY-MM` is derived from the entry's `date` field.
+
+**Affects**:
+- `create-transaction.ts` — add `categoryMonth` to every `PutItem` / `BatchWrite` payload. This handler is already deployed; it must be updated and redeployed.
+- `update-transaction.ts` — recalculate and write `categoryMonth` in the `UpdateCommand` whenever `category` or `date` changes.
+
+**Note on normalisation**: `category` and `source` must be normalised with `.trim().toLowerCase()` before being written to DynamoDB. This applies to the stored `category` field itself, not only to `categoryMonth`. This prevents the same category typed as `Food`, `food`, and `Alimentação` from appearing as three separate buckets in insights queries.
+
+---
+
+### Side Effect 2 — `laskifin-MonthlySummary` atomic update on every write
+
+Every handler that creates, updates, or deletes a Ledger entry must also update the corresponding `laskifin-MonthlySummary` item atomically. This table is the data source for `GET /balance` — if any handler skips this step, the balance silently diverges from reality with no error or alarm.
+
+The `SUMMARY_TABLE_NAME` environment variable must be passed to all write handlers in `api-stack.ts`. See Requirement 8 addendum in `transaction-crud-requirements.md`.
+
+#### Shared utility
+
+All write handlers must import and call a shared utility rather than inlining the DynamoDB expression. The utility lives at:
+
+```
+back/lambdas/src/shared/update-monthly-summary.ts
+```
+
+```typescript
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+
+export type SummaryOperation = 'add' | 'subtract';
+
+export async function updateMonthlySummary(
+  client: DynamoDBDocumentClient,
+  userId: string,
+  date: string,            // ISO 8601 — YYYY-MM derived from this
+  amount: number,          // always positive
+  type: 'INC' | 'EXP',
+  operation: SummaryOperation
+): Promise<void> {
+  const yyyyMm = date.slice(0, 7);           // "2024-06"
+  const sign = operation === 'add' ? 1 : -1;
+  const delta = amount * sign;
+
+  const incomeField    = type === 'INC' ? delta : 0;
+  const expensesField  = type === 'EXP' ? delta : 0;
+
+  await client.send(new UpdateCommand({
+    TableName: process.env.SUMMARY_TABLE_NAME!,
+    Key: { pk: userId, sk: `SUMMARY#${yyyyMm}` },
+    UpdateExpression: `
+      SET totalIncome    = if_not_exists(totalIncome,    :zero) + :incDelta,
+          totalExpenses  = if_not_exists(totalExpenses,  :zero) + :expDelta,
+          balance        = if_not_exists(totalIncome,    :zero) + :incDelta
+                         - (if_not_exists(totalExpenses, :zero) + :expDelta),
+          updatedAt      = :now
+      ADD transactionCount :countDelta
+    `,
+    ExpressionAttributeValues: {
+      ':incDelta':    incomeField,
+      ':expDelta':    expensesField,
+      ':countDelta':  sign,             // +1 on add, -1 on subtract
+      ':zero':        0,
+      ':now':         new Date().toISOString(),
+    },
+  }));
+}
+```
+
+#### Handler-specific call sites
+
+**`create-transaction.ts`** — call once per entry written (inside the loop for installments):
+
+```typescript
+await updateMonthlySummary(client, userId, entry.date, entry.amount, entry.type, 'add');
+```
+
+**`update-transaction.ts`** — subtract old amount, add new amount. Read the existing item first to get the old `amount` and `type`:
+
+```typescript
+// After GetItem to fetch the existing entry:
+await updateMonthlySummary(client, userId, existing.date, existing.amount, existing.type, 'subtract');
+await updateMonthlySummary(client, userId, payload.date,  payload.amount,  payload.type,  'add');
+```
+
+If `date` or `type` changed, the two calls target different months or different counters — the utility handles this correctly because each call is independent.
+
+**`delete-transaction.ts`** — subtract the deleted entry's amount. Read the existing item first to get `amount` and `type` before deleting:
+
+```typescript
+// After GetItem, before DeleteCommand:
+await updateMonthlySummary(client, userId, existing.date, existing.amount, existing.type, 'subtract');
+```
+
+For group delete, call once per deleted entry inside the loop.
+
+---
+
+### Side Effect 3 — `SUMMARY_TABLE_NAME` IAM grant
+
+In `api-stack.ts`, the following handlers require `grantReadWriteData` on `laskifin-MonthlySummary` in addition to their existing Ledger grants:
+
+| Handler | Ledger grant (existing) | MonthlySummary grant (new) |
+|---------|------------------------|---------------------------|
+| `create-transaction` | `grantWriteData` | `grantWriteData` |
+| `update-transaction` | `grantReadWriteData` | `grantReadWriteData` |
+| `delete-transaction` | `grantReadWriteData` | `grantReadWriteData` |
+
+---
+
+### New unit tests
+
+Add to `back/lambdas/test/transactions/`:
+
+- `create-transaction` writes `categoryMonth` attribute on every created entry (single and installments).
+- `create-transaction` normalises `category` to lowercase before writing.
+- `create-transaction` calls `updateMonthlySummary` once per entry created.
+- `update-transaction` recalculates `categoryMonth` when `category` or `date` changes.
+- `update-transaction` calls `updateMonthlySummary` with subtract-then-add when amount changes.
+- `update-transaction` calls `updateMonthlySummary` targeting two different months when `date` moves across a month boundary.
+- `delete-transaction` calls `updateMonthlySummary` with subtract for each deleted entry.
+- `delete-transaction` group delete calls `updateMonthlySummary` N times for N deleted siblings.
+- `updateMonthlySummary` with `if_not_exists` correctly initialises a new month item on first write (no pre-existing item → item created with correct values).
+
+Add to `infra/test/`:
+
+- `create-transaction` Lambda has `SUMMARY_TABLE_NAME` env var set.
+- `update-transaction` Lambda has `SUMMARY_TABLE_NAME` env var set.
+- `delete-transaction` Lambda has `SUMMARY_TABLE_NAME` env var set.
+- All three write handlers have `grantReadWriteData` on `laskifin-MonthlySummary`.
