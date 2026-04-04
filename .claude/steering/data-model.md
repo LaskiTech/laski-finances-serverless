@@ -78,20 +78,22 @@ The sort key encodes month and type, enabling `begins_with` queries at three lev
 | `sk` | String | `SUMMARY#2024-06` | Sort key. One item per user per month. |
 | `totalIncome` | Number | `5000.00` | Sum of all `INC` amounts written in this month. |
 | `totalExpenses` | Number | `3200.50` | Sum of all `EXP` amounts written in this month. |
-| `balance` | Number | `1799.50` | Denormalized: `totalIncome - totalExpenses`. Updated on every write. |
 | `transactionCount` | Number | `24` | Total entries written in this month. |
 | `updatedAt` | String | `2024-06-15T10:00:00Z` | ISO 8601 timestamp of last write. |
 
 #### Update Strategy
 
-Every Lambda handler that writes to `laskifin-Ledger` must also update `laskifin-MonthlySummary` atomically in the same operation:
+Every Lambda handler that writes to `laskifin-Ledger` must also update `laskifin-MonthlySummary`
+atomically by calling the shared `updateMonthlySummary()` utility in
+`back/lambdas/src/shared/update-monthly-summary.ts`. Never inline this logic.
 
-- **Create**: `ADD totalIncome :amount` or `ADD totalExpenses :amount`, `ADD transactionCount :one`, `SET balance = totalIncome - totalExpenses`, `SET updatedAt = :now`.
-- **Delete**: Subtract the deleted item's amount using `ADD totalExpenses -:amount` (negative ADD).
-- **Update**: Subtract old amount, add new amount in a single `UpdateCommand`.
-- **Import (statement)**: Apply the same ADD pattern per imported entry inside the BatchWrite loop.
+Operations:
+- **Create**: `ADD totalIncome :amount` (INC) or `ADD totalExpenses :amount` (EXP), `ADD transactionCount :one`, `SET updatedAt = :now`. Use `if_not_exists` initialisation for all numeric fields to safely create the summary item on first write for a given month.
+- **Delete**: Subtract the deleted item's amount using a negative `ADD` (e.g. `ADD totalExpenses -:amount`). Read the item before deleting to capture its `amount` and `type`.
+- **Update**: Call `updateMonthlySummary` twice — first subtract old amount, then add new amount. If `date` or `type` changed, the two calls target different months or counters; this is correct.
+- **Import (statement)**: Apply the same create pattern per imported entry inside the BatchWrite loop.
 
-Use `attribute_not_exists(pk)` with `SET totalIncome = if_not_exists(totalIncome, :zero) + :amount` to safely initialise a new month's summary item on first write.
+**Important**: The `balance` field is NOT stored on `laskifin-MonthlySummary` items. Handlers always compute `balance = totalIncome - totalExpenses` from the freshly read field values. Storing a derived `balance` attribute would create race condition artefacts under concurrent writes, where DynamoDB `ADD` operations on `totalIncome` and `totalExpenses` are individually atomic but the derived SET cannot reflect both updates consistently.
 
 ---
 

@@ -36,6 +36,11 @@ Complete CRUD (Create, Read, Update, Delete) feature for financial transactions 
 8. IF the request body is missing or contains invalid JSON, THEN THE Create_Handler SHALL return HTTP 400 with a descriptive error message.
 9. IF Zod validation fails, THEN THE Create_Handler SHALL return HTTP 400 with the list of validation error messages.
 10. IF the Cognito sub claim is missing from the request context, THEN THE Create_Handler SHALL return HTTP 401 with an "Unauthorized" error.
+11. THE Create_Handler SHALL normalise `category` and `source` before writing to DynamoDB by applying `.trim().toLowerCase()` to both fields. The normalised value must be stored in the `category` and `source` attributes — not the raw user input.
+12. THE Create_Handler SHALL write a `categoryMonth` attribute on every created entry, computed as `category.trim().toLowerCase() + "#" + YYYY-MM` where `YYYY-MM` is derived from the entry's `date` field. This attribute must be present on all entries including each installment in a multi-installment group, using the correct `YYYY-MM` for each entry's offset date.
+13. THE Create_Handler SHALL update `laskifin-MonthlySummary` by calling `updateMonthlySummary()` once per entry written, using operation `'add'`. For installment groups, one call is required per installment entry. The call must be made regardless of whether a summary item already exists for that month — the utility handles initialisation with `if_not_exists`.
+14. IF the `updateMonthlySummary()` call fails for any entry during a BatchWrite installment creation, THE Create_Handler SHALL log the error and continue processing remaining entries. Partial summary updates are preferable to aborting the entire creation. The response must still return HTTP 201 for successfully written Ledger entries; the MonthlySummary discrepancy will be corrected by the reconciliation Lambda (see `migration-backfill.md`).
+
 
 ### Requirement 2: List Transactions
 
@@ -75,6 +80,9 @@ Complete CRUD (Create, Read, Update, Delete) feature for financial transactions 
 5. IF the Cognito sub claim is missing from the request context, THEN THE Update_Handler SHALL return HTTP 401 with an "Unauthorized" error.
 6. IF Zod validation fails, THEN THE Update_Handler SHALL return HTTP 400 with the list of validation error messages.
 7. WHEN the transaction belongs to an Installment_Group (installmentTotal > 1), THE Update_Handler SHALL update only the individual installment entry, not the entire group.
+8. THE Update_Handler SHALL normalise `category` and `source` before writing to DynamoDB by applying `.trim().toLowerCase()` to both fields.
+9. THE Update_Handler SHALL recalculate and update the `categoryMonth` attribute in the same `UpdateCommand` as the other field updates. The new value must be `category.trim().toLowerCase() + "#" + YYYY-MM` derived from the updated `date`.
+10. THE Update_Handler SHALL update `laskifin-MonthlySummary` by calling `updateMonthlySummary()` twice in sequence: first with `operation = 'subtract'` using the existing item's `amount`, `date`, and `type` (read before the update), then with `operation = 'add'` using the payload's new `amount`, `date`, and `type`. Both calls must be made even when `amount` has not changed, to ensure `updatedAt` is refreshed. When `date` changes across a month boundary, the two calls will target different `SUMMARY#YYYY-MM` items — this is correct and expected behaviour.
 
 ### Requirement 5: Delete Transaction
 
@@ -86,8 +94,9 @@ Complete CRUD (Create, Read, Update, Delete) feature for financial transactions 
 2. THE Delete_Handler SHALL delete the item using partition key `USER#<cognitoSub>` and the provided sort key `sk` path parameter.
 3. IF no item exists for the given partition key and sort key, THEN THE Delete_Handler SHALL return HTTP 404 with a "Transaction not found" error.
 4. IF the Cognito sub claim is missing from the request context, THEN THE Delete_Handler SHALL return HTTP 401 with an "Unauthorized" error.
-
 5. WHERE the query parameter `deleteGroup=true` is provided and the transaction belongs to an Installment_Group, THE Delete_Handler SHALL delete all entries sharing the same `groupId` for the authenticated user and return HTTP 200 with the count of deleted entries.
+6. THE Delete_Handler SHALL read the existing item with a `GetCommand` before issuing the `DeleteCommand`, to capture `amount`, `type`, and `date` for the MonthlySummary update. The `GetItem` must precede the delete in all code paths.
+7. THE Delete_Handler SHALL update `laskifin-MonthlySummary` by calling `updateMonthlySummary()` with `operation = 'subtract'` immediately after each successful delete. For group delete, one call is required per deleted entry, using that entry's own `amount`, `date`, and `type`.
 
 ### Requirement 6: Transaction List Page
 
@@ -133,3 +142,6 @@ Complete CRUD (Create, Read, Update, Delete) feature for financial transactions 
 4. THE Transaction_API SHALL grant least-privilege DynamoDB permissions: read-only for list and get handlers, write-only for create handler, read-write for update and delete handlers.
 5. THE Transaction_API SHALL pass the `TABLE_NAME` environment variable to all Lambda functions referencing the Ledger_Table.
 6. THE Transaction_API SHALL configure CORS to allow the frontend origin for all transaction routes.
+7. THE Transaction_API SHALL pass the `SUMMARY_TABLE_NAME` environment variable to `create-transaction`, `update-transaction`, and `delete-transaction` Lambda functions, referencing the `laskifin-MonthlySummary` table name exported from `DataStack`.
+8. THE Transaction_API SHALL grant `grantWriteData` on `laskifin-MonthlySummary` to `create-transaction`, and `grantReadWriteData` on `laskifin-MonthlySummary` to `update-transaction` and `delete-transaction`.
+9. THE `DataStack` SHALL export `summaryTableName` and `summaryTableArn` as `CfnOutput` values for use in `ApiStack`. These exports must be present before any transaction write handler is deployed.

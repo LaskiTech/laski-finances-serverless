@@ -389,7 +389,7 @@ Handler queries `GSI_MonthlyByCategory` with `pk = USER#sub` and `categoryMonth 
 Returns the top income sources ranked by total amount for a given month.
 
 **Lambda**: `top-sources.ts`
-**DynamoDB**: `QueryCommand` on `GSI_LookupBySource` with `FilterExpression: type = INC AND begins_with(sk, TRANS#YYYY-MM)`
+**DynamoDB**: `QueryCommand` on `laskifin-Ledger` (main table) with `pk = USER#sub` and `sk begins_with TRANS#YYYY-MM#INC#`
 **IAM**: `grantReadData` on Ledger (GSI)
 
 **Query parameters**:
@@ -548,7 +548,7 @@ User may override any field per row. Rows omitted from the array are skipped (no
 | DELETE | `/income/{sk}` | `delete-income` | Ledger + MonthlySummary | New |
 | GET | `/balance` | `get-balance` | MonthlySummary | New |
 | GET | `/insights/top-spending` | `top-spending` | Ledger (GSI_MonthlyByCategory) | New |
-| GET | `/insights/top-sources` | `top-sources` | Ledger (GSI_LookupBySource) | New |
+| GET | `/insights/top-sources` | `top-sources` | Ledger (main table, SK prefix) | New |
 | POST | `/statements/upload-url` | `get-upload-url` | Statements + S3 | New |
 | GET | `/statements/{id}/status` | `get-statement-status` | Statements | New |
 | GET | `/statements/{id}/preview` | `get-statement-preview` | Statements | New |
