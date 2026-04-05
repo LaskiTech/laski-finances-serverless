@@ -19,7 +19,29 @@ npm run build --workspace="$FRONT_DIR"
 
 # ─── Step 3: Create deploy.zip from dist ─────────────────────────────────────
 echo "Creating $ZIP_FILE..."
-(cd "$FRONT_DIR/dist" && zip -r "../../$ZIP_FILE" .)
+if command -v zip &> /dev/null; then
+  (cd "$FRONT_DIR/dist" && zip -r "../../$ZIP_FILE" .)
+else
+  # Compress-Archive uses backslashes on Windows which Amplify cannot resolve.
+  # Use .NET ZipFile directly with forward-slash entry names instead.
+  ABS_ZIP="$(cd "$(dirname "$ZIP_FILE")" && pwd -W)/$(basename "$ZIP_FILE")"
+  ABS_DIST="$(cd "$FRONT_DIR/dist" && pwd -W)"
+  MKZIP_SCRIPT="$(mktemp /tmp/mkzip-XXXXXX.ps1)"
+  cat > "$MKZIP_SCRIPT" <<'PS1'
+param($distDir, $zipPath)
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+if (Test-Path $zipPath) { Remove-Item $zipPath }
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, 'Create')
+Get-ChildItem -Path $distDir -Recurse -File | ForEach-Object {
+    $relativePath = $_.FullName.Substring($distDir.Length + 1).Replace('\', '/')
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $relativePath) | Out-Null
+}
+$zip.Dispose()
+PS1
+  powershell -ExecutionPolicy Bypass -File "$MKZIP_SCRIPT" "$ABS_DIST" "$ABS_ZIP"
+  rm -f "$MKZIP_SCRIPT"
+fi
 
 # ─── Step 4: Create Amplify deployment ───────────────────────────────────────
 echo "Creating Amplify deployment for branch '$BRANCH'..."

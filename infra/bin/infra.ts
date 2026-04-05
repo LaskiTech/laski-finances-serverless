@@ -45,6 +45,9 @@ const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack`, {
   projectConfig,
   env: cdkEnv,
   apiUrl: apiStack.restApi.url,
+  cognitoDomain: `${envConfig.cognitoDomainPrefix}.auth.${envConfig.region}.amazoncognito.com`,
+  oauthRedirectSignIn: envConfig.oauthCallbackUrls[0],
+  oauthRedirectSignOut: envConfig.oauthLogoutUrls[0],
 });
 
 // App-level tags
