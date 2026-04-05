@@ -12,6 +12,9 @@ const testEnv: Environment = {
   region: 'us-west-2',
   stage: 'dev',
   frontendUrl: 'https://devfin.kioshitechmuta.link',
+  oauthCallbackUrls: ['https://devfin.kioshitechmuta.link/auth/callback', 'http://localhost:5173/auth/callback'],
+  oauthLogoutUrls: ['https://devfin.kioshitechmuta.link/login', 'http://localhost:5173/login'],
+  cognitoDomainPrefix: 'laskifin-auth',
 };
 
 const testConfig: ProjectConfig = {
@@ -22,7 +25,7 @@ const testConfig: ProjectConfig = {
 const cdkEnv = { account: testEnv.account, region: testEnv.region };
 
 describe('AuthStack', () => {
-  const app = new cdk.App();
+  const app = new cdk.App({ context: { googleOAuthClientId: 'test-google-client-id' } });
   const stack = new AuthStack(app, 'TestAuthStack', {
     environment: testEnv,
     projectConfig: testConfig,
@@ -46,6 +49,56 @@ describe('AuthStack', () => {
 
   test('creates User Pool Domain', () => {
     template.resourceCountIs('AWS::Cognito::UserPoolDomain', 1);
+  });
+
+  test('creates Google Identity Provider with correct client_id', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolIdentityProvider', {
+      ProviderName: 'Google',
+      ProviderType: 'Google',
+      ProviderDetails: Match.objectLike({
+        client_id: 'test-google-client-id',
+      }),
+    });
+  });
+
+  test('creates User Pool Client with OAuth settings', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      ClientName: 'laskifin-web-client',
+      AllowedOAuthFlows: ['code'],
+      AllowedOAuthScopes: Match.arrayWith(['openid', 'email', 'profile']),
+      SupportedIdentityProviders: Match.arrayWith(['COGNITO', 'Google']),
+      CallbackURLs: Match.arrayWith(['https://devfin.kioshitechmuta.link/auth/callback']),
+      LogoutURLs: Match.arrayWith(['https://devfin.kioshitechmuta.link/login']),
+    });
+  });
+
+  test('creates PreSignUp Lambda with nodejs22.x runtime', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      FunctionName: 'laskifin-preSignUp',
+      Runtime: 'nodejs22.x',
+    });
+  });
+
+  test('creates PreSignUp trigger on User Pool', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPool', {
+      LambdaConfig: {
+        PreSignUp: Match.anyValue(),
+      },
+    });
+  });
+
+  test('grants AdminGetUser permission to PreSignUp Lambda', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'cognito-idp:AdminGetUser',
+            Effect: 'Allow',
+            Resource: Match.anyValue(),
+          }),
+        ]),
+      },
+    });
   });
 });
 
@@ -89,7 +142,7 @@ describe('DataStack', () => {
 });
 
 describe('ApiStack', () => {
-  const app = new cdk.App();
+  const app = new cdk.App({ context: { googleOAuthClientId: 'test-google-client-id' } });
   const authStack = new AuthStack(app, 'TestAuthStack2', {
     environment: testEnv,
     projectConfig: testConfig,
@@ -289,6 +342,9 @@ describe('FrontendStack', () => {
     projectConfig: testConfig,
     env: cdkEnv,
     apiUrl: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+    cognitoDomain: 'laskifin-auth.auth.us-west-2.amazoncognito.com',
+    oauthRedirectSignIn: 'https://devfin.kioshitechmuta.link/auth/callback',
+    oauthRedirectSignOut: 'https://devfin.kioshitechmuta.link/login',
   });
   const template = Template.fromStack(stack);
 
@@ -404,6 +460,9 @@ describe('Bug Condition: Amplify branches receive VITE_API_URL', () => {
     projectConfig: testConfig,
     env: cdkEnv,
     apiUrl: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+    cognitoDomain: 'laskifin-auth.auth.us-west-2.amazoncognito.com',
+    oauthRedirectSignIn: 'https://devfin.kioshitechmuta.link/auth/callback',
+    oauthRedirectSignOut: 'https://devfin.kioshitechmuta.link/login',
   });
   const template = Template.fromStack(stack);
 
@@ -428,6 +487,42 @@ describe('Bug Condition: Amplify branches receive VITE_API_URL', () => {
         Match.objectLike({
           Name: 'VITE_API_URL',
           Value: 'https://test-api.execute-api.us-west-2.amazonaws.com/prod/',
+        }),
+      ]),
+    });
+  });
+
+  test('branches have VITE_COGNITO_DOMAIN environment variable', () => {
+    template.hasResourceProperties('AWS::Amplify::Branch', {
+      BranchName: 'main',
+      EnvironmentVariables: Match.arrayWith([
+        Match.objectLike({
+          Name: 'VITE_COGNITO_DOMAIN',
+          Value: 'laskifin-auth.auth.us-west-2.amazoncognito.com',
+        }),
+      ]),
+    });
+  });
+
+  test('branches have VITE_OAUTH_REDIRECT_SIGN_IN environment variable', () => {
+    template.hasResourceProperties('AWS::Amplify::Branch', {
+      BranchName: 'main',
+      EnvironmentVariables: Match.arrayWith([
+        Match.objectLike({
+          Name: 'VITE_OAUTH_REDIRECT_SIGN_IN',
+          Value: 'https://devfin.kioshitechmuta.link/auth/callback',
+        }),
+      ]),
+    });
+  });
+
+  test('branches have VITE_OAUTH_REDIRECT_SIGN_OUT environment variable', () => {
+    template.hasResourceProperties('AWS::Amplify::Branch', {
+      BranchName: 'main',
+      EnvironmentVariables: Match.arrayWith([
+        Match.objectLike({
+          Name: 'VITE_OAUTH_REDIRECT_SIGN_OUT',
+          Value: 'https://devfin.kioshitechmuta.link/login',
         }),
       ]),
     });

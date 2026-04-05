@@ -8,6 +8,7 @@ import {
   fetchAuthSession,
   resendSignUpCode,
   getCurrentUser,
+  signInWithRedirect,
   type SignInOutput,
   type SignUpOutput,
   type ConfirmSignUpOutput,
@@ -56,4 +57,8 @@ export async function cognitoResendSignUpCode(email: string): Promise<void> {
 
 export async function cognitoGetCurrentUser(): Promise<AuthUser> {
   return getCurrentUser();
+}
+
+export async function cognitoSignInWithGoogle(): Promise<void> {
+  await signInWithRedirect({ provider: 'Google' });
 }

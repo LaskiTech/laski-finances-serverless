@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "mcp__awslabs-cdk__CDKGeneralGuidance",
-      "mcp__awslabs-cdk__GetAwsSolutionsConstructPattern"
+      "mcp__awslabs-cdk__GetAwsSolutionsConstructPattern",
+      "Bash(xargs grep:*)",
+      "Bash(powershell -File -)",
+      "Bash(bash -c ':*)",
+      "Bash(python -c \"import sys,json; j=json.load\\(sys.stdin\\); print\\(j['job']['summary']['status']\\)\")"
     ]
   }
 }

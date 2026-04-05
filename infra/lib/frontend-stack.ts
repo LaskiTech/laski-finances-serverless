@@ -8,6 +8,9 @@ export interface FrontendStackProps extends cdk.StackProps {
   environment: Environment;
   projectConfig: ProjectConfig;
   apiUrl: string;
+  cognitoDomain: string;
+  oauthRedirectSignIn: string;
+  oauthRedirectSignOut: string;
 }
 
 export class FrontendStack extends cdk.Stack {
@@ -22,6 +25,13 @@ export class FrontendStack extends cdk.Stack {
     // Amplify App (L1 construct for stability) with Vite build settings
     const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
       name: `${prefix}-frontend`,
+      customRules: [
+        {
+          source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
+          target: '/index.html',
+          status: '200',
+        },
+      ],
       buildSpec: cdk.Fn.sub(JSON.stringify({
         version: 1,
         applications: [
@@ -49,7 +59,12 @@ export class FrontendStack extends cdk.Stack {
       branchName: 'main',
       framework: 'React',
       stage: 'PRODUCTION',
-      environmentVariables: [{ name: 'VITE_API_URL', value: props.apiUrl }],
+      environmentVariables: [
+        { name: 'VITE_API_URL', value: props.apiUrl },
+        { name: 'VITE_COGNITO_DOMAIN', value: props.cognitoDomain },
+        { name: 'VITE_OAUTH_REDIRECT_SIGN_IN', value: props.oauthRedirectSignIn },
+        { name: 'VITE_OAUTH_REDIRECT_SIGN_OUT', value: props.oauthRedirectSignOut },
+      ],
     });
 
     // Branch: dev
@@ -58,7 +73,12 @@ export class FrontendStack extends cdk.Stack {
       branchName: 'dev',
       framework: 'React',
       stage: 'DEVELOPMENT',
-      environmentVariables: [{ name: 'VITE_API_URL', value: props.apiUrl }],
+      environmentVariables: [
+        { name: 'VITE_API_URL', value: props.apiUrl },
+        { name: 'VITE_COGNITO_DOMAIN', value: props.cognitoDomain },
+        { name: 'VITE_OAUTH_REDIRECT_SIGN_IN', value: props.oauthRedirectSignIn },
+        { name: 'VITE_OAUTH_REDIRECT_SIGN_OUT', value: props.oauthRedirectSignOut },
+      ],
     });
 
     // Custom domain mapping

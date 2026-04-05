@@ -9,11 +9,13 @@ import {
   cognitoSignOut,
   cognitoResendSignUpCode,
   cognitoGetCurrentUser,
+  cognitoSignInWithGoogle,
 } from './auth-service';
 
 export interface AuthUser {
   userId: string;
   email: string;
+  identityProvider?: 'Google' | 'Cognito';
 }
 
 export interface SignInResult {
@@ -37,6 +39,7 @@ export interface AuthContextValue {
   confirmResetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
   resendSignUpCode: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -49,6 +52,7 @@ const ERROR_MAP: Record<string, string> = {
   ExpiredCodeException: 'Verification code has expired. Request a new one.',
   LimitExceededException: 'Too many attempts. Please try again later.',
   NetworkError: 'Network error. Please check your connection.',
+  UserLambdaValidationException: 'Sign-in could not be completed. Please try again.',
 };
 
 function mapCognitoError(error: unknown): string {
@@ -67,6 +71,13 @@ function mapCognitoError(error: unknown): string {
   return 'An unexpected error occurred. Please try again.';
 }
 
+function detectIdentityProvider(username: string): 'Google' | 'Cognito' {
+  if (username.startsWith('google_') || username.startsWith('Google_')) {
+    return 'Google';
+  }
+  return 'Cognito';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
           setUser({
             userId: currentUser.userId,
             email: currentUser.signInDetails?.loginId ?? '',
+            identityProvider: detectIdentityProvider(currentUser.username),
           });
         }
       } catch {
@@ -109,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       setUser({
         userId: currentUser.userId,
         email: currentUser.signInDetails?.loginId ?? email,
+        identityProvider: 'Cognito',
       });
       return { success: true, nextStep: 'DONE' };
     } catch (error) {
@@ -173,6 +186,14 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
     }
   }, []);
 
+  const signInWithGoogle = useCallback(async (): Promise<void> => {
+    try {
+      await cognitoSignInWithGoogle();
+    } catch (error) {
+      throw new Error(mapCognitoError(error));
+    }
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -185,8 +206,9 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       confirmResetPassword,
       signOut,
       resendSignUpCode,
+      signInWithGoogle,
     }),
-    [user, isAuthenticated, isLoading, signIn, signUp, confirmSignUp, resetPassword, confirmResetPassword, signOut, resendSignUpCode],
+    [user, isAuthenticated, isLoading, signIn, signUp, confirmSignUp, resetPassword, confirmResetPassword, signOut, resendSignUpCode, signInWithGoogle],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

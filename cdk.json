@@ -17,6 +17,7 @@
     ]
   },
   "context": {
+    "googleOAuthClientId": "",
     "@aws-cdk/core:stackRelativeExports": true,
     "@aws-cdk/aws-signer:signingProfileNamePassedToCfn": true,
     "@aws-cdk/aws-ecs-patterns:secGroupsDisablesImplicitOpenListener": true,
