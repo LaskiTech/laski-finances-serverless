@@ -22,8 +22,8 @@ import { formatCurrency } from '../utils/format';
 import { useAuth } from '../auth/useAuth';
 
 const COLORS = [
-  '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe',
-  '#00c49f', '#ffbb28', '#ff8042', '#a4de6c', '#d0ed57',
+  '#00D4AA', '#0B1426', '#6366F1', '#F59E0B', '#EF4444',
+  '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#06B6D4',
 ];
 
 export function DashboardPage(): React.JSX.Element {
@@ -75,26 +75,42 @@ export function DashboardPage(): React.JSX.Element {
 
   const balanceColor = getBalanceColor(balanceSummary.netBalance);
   const balanceColorValue = balanceColor === 'green'
-    ? 'green.600'
+    ? '#16A34A'
     : balanceColor === 'red'
-      ? 'red.600'
-      : 'gray.600';
+      ? '#DC2626'
+      : '#6B7280';
 
   return (
-    <Box p={8}>
-      <Heading as="h1" mb={6}>Dashboard</Heading>
+    <Box p={{ base: 5, md: 8 }} maxW="1200px" mx="auto">
+      <Flex justify="space-between" align="center" mb="6">
+        <Heading
+          as="h1"
+          fontSize="2xl"
+          fontWeight="700"
+          color="#0B1426"
+          letterSpacing="-0.02em"
+        >
+          Dashboard
+        </Heading>
 
-      <Input
-        type="month"
-        value={month}
-        onChange={handleMonthChange}
-        maxW="220px"
-        mb={6}
-      />
+        <Input
+          type="month"
+          value={month}
+          onChange={handleMonthChange}
+          maxW="180px"
+          h="40px"
+          borderRadius="10px"
+          borderColor="#E5E7EB"
+          bg="white"
+          fontSize="sm"
+          _hover={{ borderColor: "#D1D5DB" }}
+          _focus={{ borderColor: "#00D4AA", boxShadow: "0 0 0 3px rgba(0, 212, 170, 0.1)" }}
+        />
+      </Flex>
 
       {loading ? (
-        <Flex justify="center" py={10}>
-          <Spinner />
+        <Flex justify="center" py={16}>
+          <Spinner color="#00D4AA" size="lg" />
         </Flex>
       ) : error ? (
         <Alert.Root status="error">
@@ -102,12 +118,29 @@ export function DashboardPage(): React.JSX.Element {
           <Alert.Title>{error}</Alert.Title>
         </Alert.Root>
       ) : (
-        <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
-          {/* Pie Chart Section */}
-          <Box flex="1">
-            <Heading as="h2" size="md" mb={4}>Expenses by Category</Heading>
+        <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
+          {/* Pie Chart Card */}
+          <Box
+            flex="1"
+            bg="white"
+            borderRadius="14px"
+            border="1px solid"
+            borderColor="#E5E7EB"
+            p={6}
+          >
+            <Heading
+              as="h2"
+              fontSize="md"
+              fontWeight="600"
+              color="#0B1426"
+              mb={5}
+            >
+              Expenses by Category
+            </Heading>
             {categoryData.length === 0 ? (
-              <Text>No expense data available</Text>
+              <Flex justify="center" align="center" h="200px">
+                <Text color="#9CA3AF" fontSize="sm">No expense data available</Text>
+              </Flex>
             ) : (
               <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
@@ -118,6 +151,9 @@ export function DashboardPage(): React.JSX.Element {
                     cx="50%"
                     cy="50%"
                     outerRadius={120}
+                    innerRadius={60}
+                    strokeWidth={2}
+                    stroke="#FAFBFC"
                     label={(props) => {
                       const { name, value } = props as { name: string; value: number };
                       const pct = totalExpenses > 0
@@ -135,35 +171,74 @@ export function DashboardPage(): React.JSX.Element {
                   </Pie>
                   <Tooltip
                     formatter={(value) => formatCurrency(Number(value))}
+                    contentStyle={{
+                      borderRadius: '10px',
+                      border: '1px solid #E5E7EB',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                      fontSize: '13px',
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             )}
           </Box>
 
-          {/* Balance Section */}
-          <Box flex="1">
-            <Heading as="h2" size="md" mb={4}>Balance Summary</Heading>
-            <Flex direction="column" gap={3}>
-              <Flex justify="space-between">
-                <Text>Income</Text>
-                <Text color="green.600" fontWeight="bold">
+          {/* Balance Card */}
+          <Box
+            flex="1"
+            bg="white"
+            borderRadius="14px"
+            border="1px solid"
+            borderColor="#E5E7EB"
+            p={6}
+          >
+            <Heading
+              as="h2"
+              fontSize="md"
+              fontWeight="600"
+              color="#0B1426"
+              mb={5}
+            >
+              Balance Summary
+            </Heading>
+            <Flex direction="column" gap={4}>
+              <Box
+                bg="#F0FDF4"
+                borderRadius="10px"
+                p={4}
+              >
+                <Text color="#6B7280" fontSize="xs" textTransform="uppercase" letterSpacing="0.05em" mb="1">
+                  Income
+                </Text>
+                <Text color="#16A34A" fontSize="xl" fontWeight="700">
                   {formatCurrency(balanceSummary.totalIncome)}
                 </Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text>Expenses</Text>
-                <Text color="red.600" fontWeight="bold">
+              </Box>
+
+              <Box
+                bg="#FEF2F2"
+                borderRadius="10px"
+                p={4}
+              >
+                <Text color="#6B7280" fontSize="xs" textTransform="uppercase" letterSpacing="0.05em" mb="1">
+                  Expenses
+                </Text>
+                <Text color="#DC2626" fontSize="xl" fontWeight="700">
                   {formatCurrency(balanceSummary.totalExpenses)}
                 </Text>
-              </Flex>
-              <Box borderTopWidth="1px" borderColor="gray.200" pt={3}>
-                <Flex justify="space-between">
-                  <Text fontWeight="bold">Net Balance</Text>
-                  <Text color={balanceColorValue} fontWeight="bold">
-                    {formatCurrency(balanceSummary.netBalance)}
-                  </Text>
-                </Flex>
+              </Box>
+
+              <Box
+                bg="#0B1426"
+                borderRadius="10px"
+                p={4}
+              >
+                <Text color="whiteAlpha.600" fontSize="xs" textTransform="uppercase" letterSpacing="0.05em" mb="1">
+                  Net Balance
+                </Text>
+                <Text color={balanceColorValue === '#6B7280' ? 'whiteAlpha.900' : balanceColorValue} fontSize="xl" fontWeight="700">
+                  {formatCurrency(balanceSummary.netBalance)}
+                </Text>
               </Box>
             </Flex>
           </Box>

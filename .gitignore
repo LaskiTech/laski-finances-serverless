@@ -43,6 +43,9 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
+# Playwright MCP artifacts (screenshots, snapshots, console logs)
+.playwright-mcp/
+
 # AWS
 .aws-sam/
 .serverless/

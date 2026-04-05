@@ -50,6 +50,24 @@ const initialFormState: FormState = {
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
+const inputStyles = {
+  h: "48px",
+  borderRadius: "10px",
+  borderColor: "#E5E7EB",
+  bg: "white",
+  fontSize: "sm",
+  _hover: { borderColor: "#D1D5DB" },
+  _focus: { borderColor: "#00D4AA", boxShadow: "0 0 0 3px rgba(0, 212, 170, 0.1)" },
+  transition: "all 0.2s",
+} as const;
+
+const labelStyles = {
+  fontSize: "sm",
+  fontWeight: "500",
+  color: "#374151",
+  mb: "1",
+} as const;
+
 export function TransactionFormPage(): React.JSX.Element {
   const navigate = useNavigate();
   const { sk } = useParams<{ sk: string }>();
@@ -167,138 +185,189 @@ export function TransactionFormPage(): React.JSX.Element {
 
   if (loadingTransaction) {
     return (
-      <Flex justify="center" py={10}>
-        <Spinner />
+      <Flex justify="center" py={16}>
+        <Spinner color="#00D4AA" size="lg" />
       </Flex>
     );
   }
 
   return (
-    <Box p={8} maxW="600px" mx="auto">
-      <Heading as="h1" mb={6}>
+    <Box p={{ base: 5, md: 8 }} maxW="600px" mx="auto">
+      <Heading
+        as="h1"
+        fontSize="2xl"
+        fontWeight="700"
+        color="#0B1426"
+        letterSpacing="-0.02em"
+        mb={6}
+      >
         {isEditMode ? 'Edit Transaction' : 'New Transaction'}
       </Heading>
 
-      <form onSubmit={(e) => void handleSubmit(e)}>
-        <Flex direction="column" gap={4}>
-          <Field.Root invalid={!!errors.description}>
-            <Field.Label>Description</Field.Label>
-            <Input
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-            />
-            {errors.description && (
-              <Field.ErrorText>{errors.description}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.totalAmount}>
-            <Field.Label>Amount</Field.Label>
-            <Input
-              name="totalAmount"
-              type="number"
-              step="0.01"
-              value={form.totalAmount}
-              onChange={handleChange}
-            />
-            {errors.totalAmount && (
-              <Field.ErrorText>{errors.totalAmount}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.date}>
-            <Field.Label>Date</Field.Label>
-            <Input
-              name="date"
-              type="date"
-              value={form.date}
-              onChange={handleChange}
-            />
-            {errors.date && (
-              <Field.ErrorText>{errors.date}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.type}>
-            <Field.Label>Type</Field.Label>
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                name="type"
-                value={form.type}
-                onChange={handleChange}
-              >
-                <option value="EXP">EXP</option>
-                <option value="INC">INC</option>
-              </NativeSelect.Field>
-            </NativeSelect.Root>
-            {errors.type && (
-              <Field.ErrorText>{errors.type}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.source}>
-            <Field.Label>Source</Field.Label>
-            <Input
-              name="source"
-              value={form.source}
-              onChange={handleChange}
-            />
-            {errors.source && (
-              <Field.ErrorText>{errors.source}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          <Field.Root invalid={!!errors.category}>
-            <Field.Label>Category</Field.Label>
-            <Input
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-            />
-            {errors.category && (
-              <Field.ErrorText>{errors.category}</Field.ErrorText>
-            )}
-          </Field.Root>
-
-          {!isEditMode && (
-            <Field.Root invalid={!!errors.installments}>
-              <Field.Label>Installments</Field.Label>
+      <Box
+        bg="white"
+        borderRadius="14px"
+        border="1px solid"
+        borderColor="#E5E7EB"
+        p={6}
+      >
+        <form onSubmit={(e) => void handleSubmit(e)}>
+          <Flex direction="column" gap={4}>
+            <Field.Root invalid={!!errors.description}>
+              <Field.Label {...labelStyles}>Description</Field.Label>
               <Input
-                name="installments"
-                type="number"
-                min="1"
-                step="1"
-                value={form.installments}
+                name="description"
+                value={form.description}
                 onChange={handleChange}
+                {...inputStyles}
               />
-              {errors.installments && (
-                <Field.ErrorText>{errors.installments}</Field.ErrorText>
+              {errors.description && (
+                <Field.ErrorText fontSize="xs">{errors.description}</Field.ErrorText>
               )}
             </Field.Root>
-          )}
 
-          {apiError && (
-            <Text color="red.500">{apiError}</Text>
-          )}
+            <Field.Root invalid={!!errors.totalAmount}>
+              <Field.Label {...labelStyles}>Amount</Field.Label>
+              <Input
+                name="totalAmount"
+                type="number"
+                step="0.01"
+                value={form.totalAmount}
+                onChange={handleChange}
+                {...inputStyles}
+              />
+              {errors.totalAmount && (
+                <Field.ErrorText fontSize="xs">{errors.totalAmount}</Field.ErrorText>
+              )}
+            </Field.Root>
 
-          <Flex gap={4} mt={2}>
-            <Button
-              type="submit"
-              colorPalette="blue"
-              loading={submitting}
-            >
-              {isEditMode ? 'Update' : 'Create'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/transactions')}
-            >
-              Cancel
-            </Button>
+            <Field.Root invalid={!!errors.date}>
+              <Field.Label {...labelStyles}>Date</Field.Label>
+              <Input
+                name="date"
+                type="date"
+                value={form.date}
+                onChange={handleChange}
+                {...inputStyles}
+              />
+              {errors.date && (
+                <Field.ErrorText fontSize="xs">{errors.date}</Field.ErrorText>
+              )}
+            </Field.Root>
+
+            <Field.Root invalid={!!errors.type}>
+              <Field.Label {...labelStyles}>Type</Field.Label>
+              <NativeSelect.Root>
+                <NativeSelect.Field
+                  name="type"
+                  value={form.type}
+                  onChange={handleChange}
+                  h="48px"
+                  borderRadius="10px"
+                  borderColor="#E5E7EB"
+                  bg="white"
+                  fontSize="sm"
+                >
+                  <option value="EXP">EXP</option>
+                  <option value="INC">INC</option>
+                </NativeSelect.Field>
+              </NativeSelect.Root>
+              {errors.type && (
+                <Field.ErrorText fontSize="xs">{errors.type}</Field.ErrorText>
+              )}
+            </Field.Root>
+
+            <Field.Root invalid={!!errors.source}>
+              <Field.Label {...labelStyles}>Source</Field.Label>
+              <Input
+                name="source"
+                value={form.source}
+                onChange={handleChange}
+                {...inputStyles}
+              />
+              {errors.source && (
+                <Field.ErrorText fontSize="xs">{errors.source}</Field.ErrorText>
+              )}
+            </Field.Root>
+
+            <Field.Root invalid={!!errors.category}>
+              <Field.Label {...labelStyles}>Category</Field.Label>
+              <Input
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                {...inputStyles}
+              />
+              {errors.category && (
+                <Field.ErrorText fontSize="xs">{errors.category}</Field.ErrorText>
+              )}
+            </Field.Root>
+
+            {!isEditMode && (
+              <Field.Root invalid={!!errors.installments}>
+                <Field.Label {...labelStyles}>Installments</Field.Label>
+                <Input
+                  name="installments"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.installments}
+                  onChange={handleChange}
+                  {...inputStyles}
+                />
+                {errors.installments && (
+                  <Field.ErrorText fontSize="xs">{errors.installments}</Field.ErrorText>
+                )}
+              </Field.Root>
+            )}
+
+            {apiError && (
+              <Box
+                bg="#FEF2F2"
+                color="#DC2626"
+                border="1px solid"
+                borderColor="#FECACA"
+                p="3"
+                borderRadius="10px"
+                fontSize="sm"
+              >
+                {apiError}
+              </Box>
+            )}
+
+            <Flex gap={3} mt={2}>
+              <Button
+                type="submit"
+                flex="1"
+                h="48px"
+                bg="#0B1426"
+                color="white"
+                fontWeight="600"
+                fontSize="sm"
+                borderRadius="10px"
+                loading={submitting}
+                _hover={{ bg: "#162038" }}
+              >
+                {isEditMode ? 'Update' : 'Create'}
+              </Button>
+              <Button
+                flex="1"
+                h="48px"
+                variant="outline"
+                fontWeight="500"
+                fontSize="sm"
+                borderRadius="10px"
+                borderColor="#E5E7EB"
+                color="#374151"
+                _hover={{ bg: "#F9FAFB", borderColor: "#D1D5DB" }}
+                onClick={() => navigate('/transactions')}
+              >
+                Cancel
+              </Button>
+            </Flex>
           </Flex>
-        </Flex>
-      </form>
+        </form>
+      </Box>
     </Box>
   );
 }
