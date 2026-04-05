@@ -15,6 +15,16 @@ const NAV_LINKS = [
   { label: "Transactions", path: "/transactions" },
 ] as const;
 
+function LaskiLogoSmall(): React.JSX.Element {
+  return (
+    <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="12" fill="#00D4AA" />
+      <path d="M14 34V14h4v16h10v4H14z" fill="#0B1426" />
+      <circle cx="36" cy="16" r="3" fill="#0B1426" opacity="0.4" />
+    </svg>
+  );
+}
+
 export function AppLayout(): React.JSX.Element {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { signOut } = useAuth();
@@ -32,7 +42,7 @@ export function AppLayout(): React.JSX.Element {
   };
 
   return (
-    <Box>
+    <Box bg="#FAFBFC" minH="100vh">
       {/* Header bar */}
       <Flex
         as="header"
@@ -40,31 +50,42 @@ export function AppLayout(): React.JSX.Element {
         top="0"
         left="0"
         right="0"
-        height="56px"
+        height="60px"
         align="center"
         justify="space-between"
-        px={4}
-        bg="white"
-        borderBottomWidth="1px"
-        borderColor="gray.200"
+        px={5}
+        bg="#0B1426"
         zIndex="banner"
       >
-        <IconButton
-          aria-label="Open menu"
-          variant="ghost"
-          size="md"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <HamburgerIcon />
-        </IconButton>
+        <Flex align="center" gap="3">
+          <IconButton
+            aria-label="Open menu"
+            variant="ghost"
+            size="sm"
+            color="whiteAlpha.800"
+            _hover={{ bg: "whiteAlpha.100" }}
+            onClick={() => setDrawerOpen(true)}
+          >
+            <HamburgerIcon />
+          </IconButton>
 
-        <Text fontWeight="bold" fontSize="lg">
-          LASKI Finances
-        </Text>
+          <Flex align="center" gap="2">
+            <LaskiLogoSmall />
+            <Text fontWeight="700" fontSize="md" color="white" letterSpacing="-0.02em">
+              LASKI Finances
+            </Text>
+          </Flex>
+        </Flex>
 
         <Button
           variant="outline"
           size="sm"
+          color="whiteAlpha.800"
+          borderColor="whiteAlpha.200"
+          fontWeight="500"
+          fontSize="xs"
+          borderRadius="8px"
+          _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.300" }}
           onClick={() => void handleSignOut()}
         >
           Sign out
@@ -79,12 +100,17 @@ export function AppLayout(): React.JSX.Element {
       >
         <Drawer.Backdrop />
         <Drawer.Positioner>
-          <Drawer.Content>
-            <Drawer.Header>
-              <Drawer.Title>Navigation</Drawer.Title>
+          <Drawer.Content bg="#0B1426">
+            <Drawer.Header borderBottomWidth="1px" borderColor="whiteAlpha.100">
+              <Flex align="center" gap="2">
+                <LaskiLogoSmall />
+                <Drawer.Title color="white" fontWeight="700" letterSpacing="-0.02em">
+                  Navigation
+                </Drawer.Title>
+              </Flex>
             </Drawer.Header>
             <Drawer.Body p={0}>
-              <Flex direction="column">
+              <Flex direction="column" pt="2">
                 {NAV_LINKS.map((link) => {
                   const isActive = location.pathname === link.path;
                   return (
@@ -95,9 +121,13 @@ export function AppLayout(): React.JSX.Element {
                       borderRadius={0}
                       px={6}
                       py={6}
-                      fontWeight={isActive ? "bold" : "normal"}
-                      bg={isActive ? "blue.50" : "transparent"}
-                      color={isActive ? "blue.600" : "inherit"}
+                      fontWeight={isActive ? "600" : "400"}
+                      fontSize="sm"
+                      bg={isActive ? "whiteAlpha.100" : "transparent"}
+                      color={isActive ? "#00D4AA" : "whiteAlpha.700"}
+                      borderLeft={isActive ? "3px solid" : "3px solid transparent"}
+                      borderColor={isActive ? "#00D4AA" : "transparent"}
+                      _hover={{ bg: "whiteAlpha.50", color: "white" }}
                       onClick={() => handleNavClick(link.path)}
                     >
                       {link.label}
@@ -106,13 +136,13 @@ export function AppLayout(): React.JSX.Element {
                 })}
               </Flex>
             </Drawer.Body>
-            <Drawer.CloseTrigger />
+            <Drawer.CloseTrigger color="whiteAlpha.600" />
           </Drawer.Content>
         </Drawer.Positioner>
       </Drawer.Root>
 
       {/* Page content */}
-      <Box pt="56px">
+      <Box pt="60px">
         <Outlet />
       </Box>
     </Box>

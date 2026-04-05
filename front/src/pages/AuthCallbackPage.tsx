@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Box, Spinner, Text } from "@chakra-ui/react";
+import { Box, Flex, Spinner, Text } from "@chakra-ui/react";
 import { useAuth } from "../auth/useAuth";
 
 export function AuthCallbackPage(): React.JSX.Element {
@@ -39,9 +39,24 @@ export function AuthCallbackPage(): React.JSX.Element {
   }, [isLoading, isAuthenticated, error, navigate]);
 
   return (
-    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minH="100vh">
-      <Spinner size="xl" />
-      <Text mt="4" color="gray.500">Completing sign-in...</Text>
-    </Box>
+    <Flex
+      minH="100vh"
+      direction="column"
+      align="center"
+      justify="center"
+      bg="#FAFBFC"
+    >
+      <Box
+        bg="white"
+        borderRadius="14px"
+        border="1px solid"
+        borderColor="#E5E7EB"
+        p="10"
+        textAlign="center"
+      >
+        <Spinner color="#00D4AA" size="lg" mb="4" />
+        <Text color="#6B7280" fontSize="sm">Completing sign-in...</Text>
+      </Box>
+    </Flex>
   );
 }
