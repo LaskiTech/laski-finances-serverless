@@ -15,6 +15,8 @@ export interface ApiStackProps extends cdk.StackProps {
   projectConfig: ProjectConfig;
   userPool: cognito.IUserPool;
   ledgerTable: dynamodb.ITable;
+  summaryTable: dynamodb.ITable;
+  linksTable: dynamodb.ITable;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -61,15 +63,19 @@ export class ApiStack extends cdk.Stack {
       cognitoUserPools: [props.userPool],
     });
 
-    // Lambda Functions: CRUD Transactions
+    const summaryEnv = { SUMMARY_TABLE_NAME: props.summaryTable.tableName };
+
+    // --- Lambda Functions: CRUD Transactions ---
     const createTransactionHandler = this.makeLambda(
       'createTransactionHandler',
       `${prefix}-createTransaction`,
       path.resolve(__dirname, '../../back/lambdas/src/transactions/create-transaction.ts'),
       corsOrigin,
       props.ledgerTable.tableName,
+      summaryEnv,
     );
     props.ledgerTable.grantWriteData(createTransactionHandler);
+    props.summaryTable.grantWriteData(createTransactionHandler);
 
     const listTransactionsHandler = this.makeLambda(
       'listTransactionsHandler',
@@ -95,8 +101,10 @@ export class ApiStack extends cdk.Stack {
       path.resolve(__dirname, '../../back/lambdas/src/transactions/update-transaction.ts'),
       corsOrigin,
       props.ledgerTable.tableName,
+      summaryEnv,
     );
     props.ledgerTable.grantReadWriteData(updateTransactionHandler);
+    props.summaryTable.grantReadWriteData(updateTransactionHandler);
 
     const deleteTransactionHandler = this.makeLambda(
       'deleteTransactionHandler',
@@ -104,19 +112,125 @@ export class ApiStack extends cdk.Stack {
       path.resolve(__dirname, '../../back/lambdas/src/transactions/delete-transaction.ts'),
       corsOrigin,
       props.ledgerTable.tableName,
+      summaryEnv,
     );
     props.ledgerTable.grantReadWriteData(deleteTransactionHandler);
+    props.summaryTable.grantReadWriteData(deleteTransactionHandler);
 
-    // /transactions resource with POST and GET methods
+    // /transactions resource
     const transactionsResource = this.restApi.root.addResource('transactions');
     this.cognitoMethod(transactionsResource, 'POST', createTransactionHandler, cognitoAuthorizer);
     this.cognitoMethod(transactionsResource, 'GET', listTransactionsHandler, cognitoAuthorizer);
 
-    // /transactions/{sk} resource with GET, PUT, DELETE methods
     const transactionBySkResource = transactionsResource.addResource('{sk}');
     this.cognitoMethod(transactionBySkResource, 'GET', getTransactionHandler, cognitoAuthorizer);
     this.cognitoMethod(transactionBySkResource, 'PUT', updateTransactionHandler, cognitoAuthorizer);
     this.cognitoMethod(transactionBySkResource, 'DELETE', deleteTransactionHandler, cognitoAuthorizer);
+
+    // --- Lambda Functions: CRUD Income ---
+    const createIncomeHandler = this.makeLambda(
+      'createIncomeHandler',
+      `${prefix}-createIncome`,
+      path.resolve(__dirname, '../../back/lambdas/src/income/create-income.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      summaryEnv,
+    );
+    props.ledgerTable.grantWriteData(createIncomeHandler);
+    props.summaryTable.grantWriteData(createIncomeHandler);
+
+    const listIncomeHandler = this.makeLambda(
+      'listIncomeHandler',
+      `${prefix}-listIncome`,
+      path.resolve(__dirname, '../../back/lambdas/src/income/list-income.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
+    props.ledgerTable.grantReadData(listIncomeHandler);
+
+    const getIncomeHandler = this.makeLambda(
+      'getIncomeHandler',
+      `${prefix}-getIncome`,
+      path.resolve(__dirname, '../../back/lambdas/src/income/get-income.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+    );
+    props.ledgerTable.grantReadData(getIncomeHandler);
+
+    const updateIncomeHandler = this.makeLambda(
+      'updateIncomeHandler',
+      `${prefix}-updateIncome`,
+      path.resolve(__dirname, '../../back/lambdas/src/income/update-income.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      summaryEnv,
+    );
+    props.ledgerTable.grantReadWriteData(updateIncomeHandler);
+    props.summaryTable.grantReadWriteData(updateIncomeHandler);
+
+    const deleteIncomeHandler = this.makeLambda(
+      'deleteIncomeHandler',
+      `${prefix}-deleteIncome`,
+      path.resolve(__dirname, '../../back/lambdas/src/income/delete-income.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      summaryEnv,
+    );
+    props.ledgerTable.grantReadWriteData(deleteIncomeHandler);
+    props.summaryTable.grantReadWriteData(deleteIncomeHandler);
+
+    // /income resource
+    const incomeResource = this.restApi.root.addResource('income');
+    this.cognitoMethod(incomeResource, 'POST', createIncomeHandler, cognitoAuthorizer);
+    this.cognitoMethod(incomeResource, 'GET', listIncomeHandler, cognitoAuthorizer);
+
+    const incomeBySkResource = incomeResource.addResource('{sk}');
+    this.cognitoMethod(incomeBySkResource, 'GET', getIncomeHandler, cognitoAuthorizer);
+    this.cognitoMethod(incomeBySkResource, 'PUT', updateIncomeHandler, cognitoAuthorizer);
+    this.cognitoMethod(incomeBySkResource, 'DELETE', deleteIncomeHandler, cognitoAuthorizer);
+
+    // --- Lambda Functions: Links ---
+    const linksEnv = { LINKS_TABLE_NAME: props.linksTable.tableName };
+
+    const createLinkHandler = this.makeLambda(
+      'createLinkHandler',
+      `${prefix}-createLink`,
+      path.resolve(__dirname, '../../back/lambdas/src/links/create-link.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      linksEnv,
+    );
+    props.ledgerTable.grantReadData(createLinkHandler);
+    props.linksTable.grantWriteData(createLinkHandler);
+
+    const listLinksHandler = this.makeLambda(
+      'listLinksHandler',
+      `${prefix}-listLinks`,
+      path.resolve(__dirname, '../../back/lambdas/src/links/list-links.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      linksEnv,
+    );
+    props.ledgerTable.grantReadData(listLinksHandler);
+    props.linksTable.grantReadData(listLinksHandler);
+
+    const deleteLinkHandler = this.makeLambda(
+      'deleteLinkHandler',
+      `${prefix}-deleteLink`,
+      path.resolve(__dirname, '../../back/lambdas/src/links/delete-link.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      linksEnv,
+    );
+    props.linksTable.grantReadWriteData(deleteLinkHandler);
+
+    // /links resource
+    const linksResource = this.restApi.root.addResource('links');
+    this.cognitoMethod(linksResource, 'POST', createLinkHandler, cognitoAuthorizer);
+    this.cognitoMethod(linksResource, 'GET', listLinksHandler, cognitoAuthorizer);
+
+    const linkByIdResource = linksResource.addResource('{linkId}');
+    this.cognitoMethod(linkByIdResource, 'DELETE', deleteLinkHandler, cognitoAuthorizer);
 
     // Output for external consumers
     new cdk.CfnOutput(this, 'ApiUrl', {
@@ -130,6 +244,7 @@ export class ApiStack extends cdk.Stack {
     entry: string,
     corsOrigin: string,
     tableName: string,
+    additionalEnv?: Record<string, string>,
   ): lambda.NodejsFunction {
     return new lambda.NodejsFunction(this, id, {
       functionName,
@@ -145,6 +260,7 @@ export class ApiStack extends cdk.Stack {
       environment: {
         TABLE_NAME: tableName,
         CORS_ORIGIN: corsOrigin,
+        ...additionalEnv,
       },
     });
   }

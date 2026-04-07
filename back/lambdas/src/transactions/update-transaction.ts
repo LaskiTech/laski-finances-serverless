@@ -1,6 +1,7 @@
-import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { UpdateTransactionSchema } from "./schemas";
 import { docClient, withAuth, errorResponse, successResponse, parseJsonBody, decodeSk } from "./utils";
+import { updateMonthlySummary } from "../shared/update-monthly-summary";
 
 const TABLE_NAME = process.env.TABLE_NAME!;
 
@@ -12,6 +13,7 @@ export const handler = withAuth(async (event, userId, logger) => {
   }
 
   const decodedSk = decodeSk(sk);
+  const pk = `USER#${userId}`;
 
   const rawBody = parseJsonBody(event.body);
   if (rawBody === null) {
@@ -25,16 +27,27 @@ export const handler = withAuth(async (event, userId, logger) => {
   }
 
   const { description, amount, date, type, source, category } = parsed.data;
+  const normalizedCategory = category.trim().toLowerCase();
+  const normalizedSource = source.trim().toLowerCase();
+  const yearMonth = new Date(date).toISOString().slice(0, 7);
+  const categoryMonth = `${normalizedCategory}#${yearMonth}`;
+
+  // Read existing item for MonthlySummary subtraction
+  const existing = await docClient.send(new GetCommand({
+    TableName: TABLE_NAME,
+    Key: { pk, sk: decodedSk },
+  }));
+
+  if (!existing.Item) {
+    return errorResponse(404, "Transaction not found");
+  }
 
   try {
     const result = await docClient.send(new UpdateCommand({
       TableName: TABLE_NAME,
-      Key: {
-        pk: `USER#${userId}`,
-        sk: decodedSk,
-      },
+      Key: { pk, sk: decodedSk },
       ConditionExpression: "attribute_exists(pk)",
-      UpdateExpression: "SET description = :description, amount = :amount, #date = :date, #type = :type, #source = :source, category = :category",
+      UpdateExpression: "SET description = :description, amount = :amount, #date = :date, #type = :type, #source = :source, category = :category, categoryMonth = :categoryMonth",
       ExpressionAttributeNames: {
         "#date": "date",
         "#type": "type",
@@ -45,11 +58,17 @@ export const handler = withAuth(async (event, userId, logger) => {
         ":amount": amount,
         ":date": date,
         ":type": type,
-        ":source": source,
-        ":category": category,
+        ":source": normalizedSource,
+        ":category": normalizedCategory,
+        ":categoryMonth": categoryMonth,
       },
       ReturnValues: "ALL_NEW",
     }));
+
+    // Subtract old summary, add new summary
+    const oldItem = existing.Item;
+    await updateMonthlySummary(docClient, pk, oldItem.date, oldItem.amount, oldItem.type, 'subtract');
+    await updateMonthlySummary(docClient, pk, date, amount, type, 'add');
 
     return successResponse(200, result.Attributes as Record<string, unknown>);
   } catch (error) {
@@ -57,6 +76,6 @@ export const handler = withAuth(async (event, userId, logger) => {
       return errorResponse(404, "Transaction not found");
     }
     logger.error("Update failed", error);
-    throw error; // re-throw so withAuth returns 500
+    throw error;
   }
 });

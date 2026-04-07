@@ -112,7 +112,9 @@ export function AppLayout(): React.JSX.Element {
             <Drawer.Body p={0}>
               <Flex direction="column" pt="2">
                 {NAV_LINKS.map((link) => {
-                  const isActive = location.pathname === link.path;
+                  const isActive = link.path === '/transactions'
+            ? location.pathname.startsWith('/transactions')
+            : location.pathname === link.path;
                   return (
                     <Button
                       key={link.path}

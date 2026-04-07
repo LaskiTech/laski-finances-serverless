@@ -7,7 +7,6 @@ import {
   Input,
   Text,
   Flex,
-  NativeSelect,
   Spinner,
   Field,
 } from '@chakra-ui/react';
@@ -18,11 +17,10 @@ import {
   updateTransaction,
 } from '../api/transactions';
 
-const TransactionFormSchema = z.object({
+const ExpenseFormSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   totalAmount: z.number().positive('Amount must be positive'),
   date: z.string().min(1, 'Date is required'),
-  type: z.enum(['INC', 'EXP']),
   source: z.string().min(1, 'Source is required'),
   category: z.string().min(1, 'Category is required'),
   installments: z.number().int().min(1).default(1),
@@ -32,7 +30,6 @@ interface FormState {
   description: string;
   totalAmount: string;
   date: string;
-  type: 'INC' | 'EXP';
   source: string;
   category: string;
   installments: string;
@@ -42,7 +39,6 @@ const initialFormState: FormState = {
   description: '',
   totalAmount: '',
   date: '',
-  type: 'EXP',
   source: '',
   category: '',
   installments: '1',
@@ -51,24 +47,24 @@ const initialFormState: FormState = {
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
 const inputStyles = {
-  h: "48px",
-  borderRadius: "10px",
-  borderColor: "#E5E7EB",
-  bg: "white",
-  fontSize: "sm",
-  _hover: { borderColor: "#D1D5DB" },
-  _focus: { borderColor: "#00D4AA", boxShadow: "0 0 0 3px rgba(0, 212, 170, 0.1)" },
-  transition: "all 0.2s",
+  h: '48px',
+  borderRadius: '10px',
+  borderColor: '#E5E7EB',
+  bg: 'white',
+  fontSize: 'sm',
+  _hover: { borderColor: '#D1D5DB' },
+  _focus: { borderColor: '#00D4AA', boxShadow: '0 0 0 3px rgba(0, 212, 170, 0.1)' },
+  transition: 'all 0.2s',
 } as const;
 
 const labelStyles = {
-  fontSize: "sm",
-  fontWeight: "500",
-  color: "#374151",
-  mb: "1",
+  fontSize: 'sm',
+  fontWeight: '500',
+  color: '#374151',
+  mb: '1',
 } as const;
 
-export function TransactionFormPage(): React.JSX.Element {
+export function ExpenseFormPage(): React.JSX.Element {
   const navigate = useNavigate();
   const { sk } = useParams<{ sk: string }>();
   const isEditMode = !!sk;
@@ -90,14 +86,13 @@ export function TransactionFormPage(): React.JSX.Element {
           description: tx.description,
           totalAmount: String(tx.amount),
           date: tx.date,
-          type: tx.type,
           source: tx.source,
           category: tx.category,
           installments: '1',
         });
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Failed to load transaction';
+          err instanceof Error ? err.message : 'Failed to load expense';
         setApiError(message);
       } finally {
         setLoadingTransaction(false);
@@ -108,7 +103,7 @@ export function TransactionFormPage(): React.JSX.Element {
   }, [isEditMode, decodedSk]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement>,
   ): void => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -117,11 +112,10 @@ export function TransactionFormPage(): React.JSX.Element {
   };
 
   const validate = (): boolean => {
-    const parsed = TransactionFormSchema.safeParse({
+    const parsed = ExpenseFormSchema.safeParse({
       description: form.description,
       totalAmount: Number(form.totalAmount),
       date: form.date,
-      type: form.type,
       source: form.source,
       category: form.category,
       installments: Number(form.installments) || 1,
@@ -158,7 +152,7 @@ export function TransactionFormPage(): React.JSX.Element {
           description: form.description,
           amount: Number(form.totalAmount),
           date: form.date,
-          type: form.type,
+          type: 'EXP',
           source: form.source,
           category: form.category,
         });
@@ -167,13 +161,13 @@ export function TransactionFormPage(): React.JSX.Element {
           description: form.description,
           totalAmount: Number(form.totalAmount),
           date: form.date,
-          type: form.type,
+          type: 'EXP',
           source: form.source,
           category: form.category,
           installments: Number(form.installments) || 1,
         });
       }
-      navigate('/transactions');
+      navigate('/transactions?tab=expenses');
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -182,6 +176,13 @@ export function TransactionFormPage(): React.JSX.Element {
       setSubmitting(false);
     }
   };
+
+  const installmentCount = Number(form.installments) || 1;
+  const totalAmount = Number(form.totalAmount) || 0;
+  const installmentValue =
+    installmentCount > 1 && totalAmount > 0
+      ? totalAmount / installmentCount
+      : null;
 
   if (loadingTransaction) {
     return (
@@ -201,7 +202,7 @@ export function TransactionFormPage(): React.JSX.Element {
         letterSpacing="-0.02em"
         mb={6}
       >
-        {isEditMode ? 'Edit Transaction' : 'New Transaction'}
+        {isEditMode ? 'Edit Expense' : 'New Expense'}
       </Heading>
 
       <Box
@@ -227,7 +228,7 @@ export function TransactionFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.totalAmount}>
-              <Field.Label {...labelStyles}>Amount</Field.Label>
+              <Field.Label {...labelStyles}>Total Amount</Field.Label>
               <Input
                 name="totalAmount"
                 type="number"
@@ -252,28 +253,6 @@ export function TransactionFormPage(): React.JSX.Element {
               />
               {errors.date && (
                 <Field.ErrorText fontSize="xs">{errors.date}</Field.ErrorText>
-              )}
-            </Field.Root>
-
-            <Field.Root invalid={!!errors.type}>
-              <Field.Label {...labelStyles}>Type</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  name="type"
-                  value={form.type}
-                  onChange={handleChange}
-                  h="48px"
-                  borderRadius="10px"
-                  borderColor="#E5E7EB"
-                  bg="white"
-                  fontSize="sm"
-                >
-                  <option value="EXP">EXP</option>
-                  <option value="INC">INC</option>
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-              {errors.type && (
-                <Field.ErrorText fontSize="xs">{errors.type}</Field.ErrorText>
               )}
             </Field.Root>
 
@@ -315,6 +294,16 @@ export function TransactionFormPage(): React.JSX.Element {
                   onChange={handleChange}
                   {...inputStyles}
                 />
+                {installmentValue !== null && (
+                  <Text fontSize="xs" color="#6B7280" mt="1">
+                    Amount will be split into {installmentCount} monthly payments of{' '}
+                    {installmentValue.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}{' '}
+                    each.
+                  </Text>
+                )}
                 {errors.installments && (
                   <Field.ErrorText fontSize="xs">{errors.installments}</Field.ErrorText>
                 )}
@@ -346,7 +335,7 @@ export function TransactionFormPage(): React.JSX.Element {
                 fontSize="sm"
                 borderRadius="10px"
                 loading={submitting}
-                _hover={{ bg: "#162038" }}
+                _hover={{ bg: '#162038' }}
               >
                 {isEditMode ? 'Update' : 'Create'}
               </Button>
@@ -359,8 +348,8 @@ export function TransactionFormPage(): React.JSX.Element {
                 borderRadius="10px"
                 borderColor="#E5E7EB"
                 color="#374151"
-                _hover={{ bg: "#F9FAFB", borderColor: "#D1D5DB" }}
-                onClick={() => navigate('/transactions')}
+                _hover={{ bg: '#F9FAFB', borderColor: '#D1D5DB' }}
+                onClick={() => navigate('/transactions?tab=expenses')}
               >
                 Cancel
               </Button>

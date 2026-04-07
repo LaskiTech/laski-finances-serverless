@@ -126,18 +126,57 @@ describe('DataStack', () => {
 
   test('creates GSI for source lookup', () => {
     template.hasResourceProperties('AWS::DynamoDB::Table', {
-      GlobalSecondaryIndexes: [
-        {
+      TableName: 'laskifin-Ledger',
+      GlobalSecondaryIndexes: Match.arrayWith([
+        Match.objectLike({
           IndexName: 'GSI_LookupBySource',
           Projection: { ProjectionType: 'ALL' },
-        },
-      ],
+        }),
+      ]),
     });
   });
 
-  test('exposes ledgerTable as public property', () => {
+  test('creates GSI for monthly category lookup', () => {
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+      TableName: 'laskifin-Ledger',
+      GlobalSecondaryIndexes: Match.arrayWith([
+        Match.objectLike({
+          IndexName: 'GSI_MonthlyByCategory',
+          Projection: { ProjectionType: 'ALL' },
+        }),
+      ]),
+    });
+  });
+
+  test('creates MonthlySummary table', () => {
+    template.hasResource('AWS::DynamoDB::Table', {
+      DeletionPolicy: 'Retain',
+      UpdateReplacePolicy: 'Retain',
+      Properties: Match.objectLike({
+        TableName: 'laskifin-MonthlySummary',
+        BillingMode: 'PAY_PER_REQUEST',
+        DeletionProtectionEnabled: true,
+      }),
+    });
+  });
+
+  test('creates Links table with GSIs', () => {
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+      TableName: 'laskifin-Links',
+      GlobalSecondaryIndexes: Match.arrayWith([
+        Match.objectLike({ IndexName: 'GSI_LinksByChild' }),
+        Match.objectLike({ IndexName: 'GSI_LinksById' }),
+      ]),
+    });
+  });
+
+  test('exposes ledgerTable, summaryTable, and linksTable as public properties', () => {
     expect(stack.ledgerTable).toBeDefined();
     expect(stack.ledgerTable.tableName).toBeDefined();
+    expect(stack.summaryTable).toBeDefined();
+    expect(stack.summaryTable.tableName).toBeDefined();
+    expect(stack.linksTable).toBeDefined();
+    expect(stack.linksTable.tableName).toBeDefined();
   });
 });
 
@@ -159,6 +198,8 @@ describe('ApiStack', () => {
     env: cdkEnv,
     userPool: authStack.userPool,
     ledgerTable: dataStack.ledgerTable,
+    summaryTable: dataStack.summaryTable,
+    linksTable: dataStack.linksTable,
   });
   const template = Template.fromStack(stack);
 
@@ -195,7 +236,7 @@ describe('ApiStack', () => {
     test('preserves resource counts for REST API, Log Group, Lambda, and Authorizer', () => {
       template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
       template.resourceCountIs('AWS::Logs::LogGroup', 1);
-      template.resourceCountIs('AWS::Lambda::Function', 5);
+      template.resourceCountIs('AWS::Lambda::Function', 13);
       template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
     });
 
@@ -331,6 +372,65 @@ describe('ApiStack', () => {
         return deps.some((dep: string) => accountLogicalIds.includes(dep));
       });
       expect(hasAccountDependency).toBe(true);
+    });
+  });
+
+  describe('New handlers: Income + Links', () => {
+    test('creates 5 income Lambda handlers', () => {
+      for (const name of ['createIncome', 'listIncome', 'getIncome', 'updateIncome', 'deleteIncome']) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Runtime: 'nodejs22.x',
+        });
+      }
+    });
+
+    test('creates 3 link Lambda handlers', () => {
+      for (const name of ['createLink', 'listLinks', 'deleteLink']) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Runtime: 'nodejs22.x',
+        });
+      }
+    });
+
+    test('transaction write handlers have SUMMARY_TABLE_NAME env var', () => {
+      for (const name of ['createTransaction', 'updateTransaction', 'deleteTransaction']) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Environment: {
+            Variables: Match.objectLike({
+              SUMMARY_TABLE_NAME: Match.anyValue(),
+            }),
+          },
+        });
+      }
+    });
+
+    test('income write handlers have SUMMARY_TABLE_NAME env var', () => {
+      for (const name of ['createIncome', 'updateIncome', 'deleteIncome']) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Environment: {
+            Variables: Match.objectLike({
+              SUMMARY_TABLE_NAME: Match.anyValue(),
+            }),
+          },
+        });
+      }
+    });
+
+    test('link handlers have LINKS_TABLE_NAME env var', () => {
+      for (const name of ['createLink', 'listLinks', 'deleteLink']) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Environment: {
+            Variables: Match.objectLike({
+              LINKS_TABLE_NAME: Match.anyValue(),
+            }),
+          },
+        });
+      }
     });
   });
 });

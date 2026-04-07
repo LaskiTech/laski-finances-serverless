@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { APIGatewayProxyResult } from "aws-lambda";
 import { docClient, withAuth, errorResponse, successResponse, decodeSk } from "./utils";
+import { updateMonthlySummary } from "../shared/update-monthly-summary";
 
 const TABLE_NAME = process.env.TABLE_NAME!;
 
@@ -48,16 +49,35 @@ const deleteGroup = async (pk: string, sk: string): Promise<APIGatewayProxyResul
     }));
   }
 
+  // Subtract from MonthlySummary for each deleted item
+  for (const item of items) {
+    await updateMonthlySummary(docClient, pk, item.date, item.amount, item.type, 'subtract');
+  }
+
   return successResponse(200, { message: `Deleted ${items.length} transactions` });
 };
 
 const deleteSingle = async (pk: string, sk: string): Promise<APIGatewayProxyResult> => {
+  // Read existing item for MonthlySummary subtraction
+  const getResult = await docClient.send(new GetCommand({
+    TableName: TABLE_NAME,
+    Key: { pk, sk },
+  }));
+
+  if (!getResult.Item) {
+    return errorResponse(404, "Transaction not found");
+  }
+
+  const item = getResult.Item;
+
   try {
     await docClient.send(new DeleteCommand({
       TableName: TABLE_NAME,
       Key: { pk, sk },
       ConditionExpression: "attribute_exists(pk)",
     }));
+
+    await updateMonthlySummary(docClient, pk, item.date, item.amount, item.type, 'subtract');
 
     return successResponse(200, { message: "Transaction deleted" });
   } catch (error) {

@@ -127,6 +127,10 @@ function setupMockSend(decodedSk: string) {
     }
 
     if (command._type === "UpdateCommand") {
+      // MonthlySummary updates target a different table — always succeed
+      if (command.input?.TableName === "laskifin-MonthlySummary") {
+        return Promise.resolve({});
+      }
       if (key && key.pk === pk && key.sk === decodedSk) {
         return Promise.resolve({
           Attributes: {
@@ -158,7 +162,7 @@ function setupMockSend(decodedSk: string) {
 
     if (command._type === "QueryCommand") {
       return Promise.resolve({
-        Items: [{ pk, sk: decodedSk }],
+        Items: [{ pk, sk: decodedSk, amount: 100, type: "EXP", date: "2026-03-15" }],
       });
     }
 
@@ -173,6 +177,7 @@ function setupMockSend(decodedSk: string) {
 describe("Bug Condition: Encoded SK Returns 404 on Unfixed Handlers", () => {
   beforeEach(() => {
     vi.stubEnv("TABLE_NAME", "laskifin-Ledger");
+    vi.stubEnv("SUMMARY_TABLE_NAME", "laskifin-MonthlySummary");
     mockSend.mockReset();
   });
 

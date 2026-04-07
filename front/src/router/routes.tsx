@@ -9,7 +9,8 @@ import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { AuthCallbackPage } from "../pages/AuthCallbackPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
-import { TransactionFormPage } from "../pages/TransactionFormPage";
+import { IncomeFormPage } from "../pages/IncomeFormPage";
+import { ExpenseFormPage } from "../pages/ExpenseFormPage";
 
 export function AppRoutes(): React.JSX.Element {
   return (
@@ -33,8 +34,10 @@ export function AppRoutes(): React.JSX.Element {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/transactions/new" element={<TransactionFormPage />} />
-        <Route path="/transactions/edit/:sk" element={<TransactionFormPage />} />
+        <Route path="/transactions/income/new" element={<IncomeFormPage />} />
+        <Route path="/transactions/income/edit/:sk" element={<IncomeFormPage />} />
+        <Route path="/transactions/expense/new" element={<ExpenseFormPage />} />
+        <Route path="/transactions/expense/edit/:sk" element={<ExpenseFormPage />} />
       </Route>
     </Routes>
   );
