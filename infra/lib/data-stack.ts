@@ -11,6 +11,8 @@ export interface DataStackProps extends cdk.StackProps {
 
 export class DataStack extends cdk.Stack {
   public readonly ledgerTable: dynamodb.Table;
+  public readonly summaryTable: dynamodb.Table;
+  public readonly linksTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -39,9 +41,63 @@ export class DataStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    // Output for external consumers (CLI, debugging)
+    // GSI for top spending by category per month
+    this.ledgerTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_MonthlyByCategory',
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'categoryMonth', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // MonthlySummary table — pre-aggregated monthly totals per user
+    this.summaryTable = new dynamodb.Table(this, 'MonthlySummaryTable', {
+      tableName: `${prefix}-MonthlySummary`,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      deletionProtection: true,
+    });
+
+    // Links table — expense association layer
+    this.linksTable = new dynamodb.Table(this, 'LinksTable', {
+      tableName: `${prefix}-Links`,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      deletionProtection: true,
+    });
+
+    // GSI for bidirectional link lookups by child
+    this.linksTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_LinksByChild',
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'childSk', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // GSI for link lookup by linkId (used for DELETE /links/{linkId})
+    this.linksTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_LinksById',
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'linkId', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Outputs for external consumers
     new cdk.CfnOutput(this, 'LedgerTableName', {
       value: this.ledgerTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'MonthlySummaryTableName', {
+      value: this.summaryTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'LinksTableName', {
+      value: this.linksTable.tableName,
     });
   }
 }

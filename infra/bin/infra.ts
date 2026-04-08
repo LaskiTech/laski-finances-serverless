@@ -38,6 +38,8 @@ const apiStack = new ApiStack(app, `${prefix}-api-stack`, {
   env: cdkEnv,
   userPool: authStack.userPool,
   ledgerTable: dataStack.ledgerTable,
+  summaryTable: dataStack.summaryTable,
+  linksTable: dataStack.linksTable,
 });
 
 const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack`, {

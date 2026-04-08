@@ -133,6 +133,10 @@ function setupMockForExistingItem(sk: string) {
     }
 
     if (command._type === "UpdateCommand") {
+      // MonthlySummary updates target a different table — always succeed
+      if (command.input?.TableName === "laskifin-MonthlySummary") {
+        return Promise.resolve({});
+      }
       if (key && key.pk === pk && key.sk === sk) {
         return Promise.resolve({
           Attributes: {
@@ -163,7 +167,7 @@ function setupMockForExistingItem(sk: string) {
 
     if (command._type === "QueryCommand") {
       return Promise.resolve({
-        Items: [{ pk, sk }],
+        Items: [{ pk, sk, amount: 100, type: "EXP", date: "2026-03-15" }],
       });
     }
 
@@ -207,6 +211,7 @@ function setupMockForMissingItem() {
 describe("Preservation: Non-Encoded SK and Error Handling Behavior Unchanged", () => {
   beforeEach(() => {
     vi.stubEnv("TABLE_NAME", "laskifin-Ledger");
+    vi.stubEnv("SUMMARY_TABLE_NAME", "laskifin-MonthlySummary");
     mockSend.mockReset();
   });
 
