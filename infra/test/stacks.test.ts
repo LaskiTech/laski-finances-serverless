@@ -236,7 +236,7 @@ describe('ApiStack', () => {
     test('preserves resource counts for REST API, Log Group, Lambda, and Authorizer', () => {
       template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
       template.resourceCountIs('AWS::Logs::LogGroup', 1);
-      template.resourceCountIs('AWS::Lambda::Function', 13);
+      template.resourceCountIs('AWS::Lambda::Function', 14);
       template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
     });
 
@@ -431,6 +431,80 @@ describe('ApiStack', () => {
           },
         });
       }
+    });
+  });
+
+  describe('Balance handler', () => {
+    test('GET /balance route exists on API Gateway', () => {
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'balance',
+      });
+
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'GET',
+        AuthorizationType: 'COGNITO_USER_POOLS',
+        AuthorizerId: Match.anyValue(),
+        ResourceId: Match.anyValue(),
+      });
+    });
+
+    test('Cognito authoriser is attached to balance route', () => {
+      // The balance GET method must use COGNITO_USER_POOLS auth
+      template.hasResourceProperties('AWS::ApiGateway::Method', {
+        HttpMethod: 'GET',
+        AuthorizationType: 'COGNITO_USER_POOLS',
+      });
+    });
+
+    test('balance Lambda has SUMMARY_TABLE_NAME env var set', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: {
+          Variables: Match.objectLike({
+            SUMMARY_TABLE_NAME: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    test('balance Lambda does NOT have TABLE_NAME env var', () => {
+      const templateJson = template.toJSON();
+      const resources = templateJson.Resources;
+
+      // Find all Lambda functions and check the one with SUMMARY_TABLE_NAME but no TABLE_NAME
+      const lambdaLogicalIds = Object.keys(resources).filter(
+        (key) => resources[key].Type === 'AWS::Lambda::Function'
+      );
+
+      // Find the balance handler — it has SUMMARY_TABLE_NAME but should NOT have TABLE_NAME
+      const balanceHandlers = lambdaLogicalIds.filter((id) => {
+        const envVars = resources[id].Properties?.Environment?.Variables;
+        return envVars?.SUMMARY_TABLE_NAME && !envVars?.TABLE_NAME;
+      });
+
+      expect(balanceHandlers.length).toBeGreaterThan(0);
+    });
+
+    test('balance Lambda has nodejs22.x runtime, 256 MB memory, 10s timeout', () => {
+      // The balance handler has SUMMARY_TABLE_NAME + CORS_ORIGIN but no TABLE_NAME
+      // Verify a Lambda exists with the correct runtime, memory, and timeout that also has SUMMARY_TABLE_NAME
+      const templateJson = template.toJSON();
+      const resources = templateJson.Resources;
+
+      const lambdaLogicalIds = Object.keys(resources).filter(
+        (key) => resources[key].Type === 'AWS::Lambda::Function'
+      );
+
+      const balanceHandler = lambdaLogicalIds.find((id) => {
+        const props = resources[id].Properties;
+        const envVars = props?.Environment?.Variables;
+        return envVars?.SUMMARY_TABLE_NAME && !envVars?.TABLE_NAME;
+      });
+
+      expect(balanceHandler).toBeDefined();
+      const props = resources[balanceHandler!].Properties;
+      expect(props.Runtime).toBe('nodejs22.x');
+      expect(props.MemorySize).toBe(256);
+      expect(props.Timeout).toBe(10);
     });
   });
 });

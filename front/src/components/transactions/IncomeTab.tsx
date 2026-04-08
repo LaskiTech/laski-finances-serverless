@@ -45,12 +45,12 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
   }, [fetchIncome]);
 
   const handleDelete = async (item: IncomeItem): Promise<void> => {
-    const confirmed = window.confirm('Are you sure you want to delete this income entry?');
+    const confirmed = window.confirm('Tem certeza que deseja excluir esta receita?');
     if (!confirmed) return;
 
     let deleteGroup = false;
     if (item.isRecurring) {
-      deleteGroup = window.confirm('Delete this and all future entries in this recurring series?');
+      deleteGroup = window.confirm('Excluir esta e todas as futuras entradas desta série recorrente?');
     }
 
     try {
@@ -88,7 +88,7 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
           _hover={{ bg: '#162038' }}
           onClick={() => navigate('/transactions/income/new')}
         >
-          New Income
+          Nova receita
         </Button>
       </Flex>
 
@@ -106,7 +106,7 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
           borderColor="#E5E7EB"
           py={16}
         >
-          <Text color="#9CA3AF" fontSize="sm">No income entries found.</Text>
+          <Text color="#9CA3AF" fontSize="sm">Nenhuma receita encontrada.</Text>
         </Flex>
       ) : (
         <Box
@@ -119,13 +119,13 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
           <Table.Root>
             <Table.Header>
               <Table.Row bg="#FAFBFC">
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Date</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Description</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Category</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Source</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Amount</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Recurring</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Actions</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Data</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Descrição</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Categoria</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Fonte</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Valor</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Recorrente</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Ações</Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -147,7 +147,7 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
                         px="2"
                         py="0.5"
                       >
-                        Recurring
+                        Recorrente
                       </Badge>
                     ) : (
                       <Text fontSize="sm" color="#9CA3AF">—</Text>
@@ -167,7 +167,7 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
                           navigate(`/transactions/income/edit/${encodeURIComponent(item.sk)}`)
                         }
                       >
-                        Edit
+                        Editar
                       </Button>
                       <Button
                         size="sm"
@@ -179,7 +179,7 @@ export function IncomeTab({ month, onMonthChange }: IncomeTabProps): React.JSX.E
                         _hover={{ bg: '#FEF2F2', borderColor: '#DC2626' }}
                         onClick={() => void handleDelete(item)}
                       >
-                        Delete
+                        Excluir
                       </Button>
                     </Flex>
                   </Table.Cell>

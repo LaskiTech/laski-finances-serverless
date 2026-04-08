@@ -52,10 +52,10 @@ export function ConfirmSignUpPage(): React.JSX.Element {
             <LaskiLogo />
           </Flex>
           <Heading as="h1" fontSize="2xl" fontWeight="700" color="#0B1426" mb="4">
-            Missing Email
+            E-mail não informado
           </Heading>
           <Text color="#6B7280" fontSize="sm" mb="6">
-            No email address was provided. Please sign up first.
+            Nenhum e-mail foi fornecido. Por favor, cadastre-se primeiro.
           </Text>
           <Link
             asChild
@@ -63,7 +63,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
             fontWeight="600"
             _hover={{ color: "#00B894" }}
           >
-            <RouterLink to="/signup">Go to Sign Up</RouterLink>
+            <RouterLink to="/signup">Ir para cadastro</RouterLink>
           </Link>
         </Box>
       </Flex>
@@ -77,7 +77,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
 
     const trimmedCode = code.trim();
     if (!trimmedCode) {
-      setCodeError("Verification code is required");
+      setCodeError("Código de verificação obrigatório");
       return;
     }
     setCodeError("");
@@ -90,7 +90,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
       setServerError(
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred. Please try again."
+          : "Ocorreu um erro inesperado. Tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -103,12 +103,12 @@ export function ConfirmSignUpPage(): React.JSX.Element {
     setIsResending(true);
     try {
       await resendSignUpCode(email);
-      setResendMessage("A new verification code has been sent to your email.");
+      setResendMessage("Um novo código de verificação foi enviado para o seu e-mail.");
     } catch (error) {
       setServerError(
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred. Please try again."
+          : "Ocorreu um erro inesperado. Tente novamente."
       );
     } finally {
       setIsResending(false);
@@ -150,10 +150,10 @@ export function ConfirmSignUpPage(): React.JSX.Element {
           mb="2"
           textAlign="center"
         >
-          Verify Your Email
+          Verifique seu e-mail
         </Heading>
         <Text color="#6B7280" fontSize="sm" textAlign="center" mb="8">
-          We sent a verification code to {email}
+          Enviamos um código de verificação para {email}
         </Text>
 
         {serverError && (
@@ -192,7 +192,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
           <Stack gap="4">
             <Field.Root invalid={!!codeError}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Verification Code
+                Código de verificação
               </Field.Label>
               <Input
                 type="text"
@@ -202,7 +202,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
                   setCode(e.target.value);
                   setCodeError("");
                 }}
-                placeholder="Enter 6-digit code"
+                placeholder="Digite o código de 6 dígitos"
                 maxLength={6}
                 h="48px"
                 borderRadius="10px"
@@ -232,14 +232,14 @@ export function ConfirmSignUpPage(): React.JSX.Element {
               _hover={{ bg: "#162038" }}
               transition="all 0.2s"
             >
-              Verify
+              Verificar
             </Button>
           </Stack>
         </form>
 
         <Stack mt="6" gap="3" textAlign="center">
           <Text color="#6B7280" fontSize="sm">
-            Didn&apos;t receive a code?{" "}
+            Não recebeu o código?{" "}
             <Button
               variant="plain"
               size="sm"
@@ -250,7 +250,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
               disabled={isResending}
               _hover={{ color: "#00B894" }}
             >
-              Resend code
+              Reenviar código
             </Button>
           </Text>
           <Text fontSize="sm">
@@ -260,7 +260,7 @@ export function ConfirmSignUpPage(): React.JSX.Element {
               fontWeight="600"
               _hover={{ color: "#00B894" }}
             >
-              <RouterLink to="/login">Back to Sign In</RouterLink>
+              <RouterLink to="/login">Voltar para login</RouterLink>
             </Link>
           </Text>
         </Stack>

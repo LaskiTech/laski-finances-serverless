@@ -232,6 +232,28 @@ export class ApiStack extends cdk.Stack {
     const linkByIdResource = linksResource.addResource('{linkId}');
     this.cognitoMethod(linkByIdResource, 'DELETE', deleteLinkHandler, cognitoAuthorizer);
 
+    // --- Lambda Function: Balance ---
+    const getBalanceHandler = new lambda.NodejsFunction(this, 'GetBalanceHandler', {
+      entry: path.resolve(__dirname, '../../back/lambdas/src/balance/get-balance.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_22_X,
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        SUMMARY_TABLE_NAME: props.summaryTable.tableName,
+        CORS_ORIGIN: corsOrigin,
+      },
+    });
+    props.summaryTable.grantReadData(getBalanceHandler);
+
+    // /balance resource
+    const balanceResource = this.restApi.root.addResource('balance');
+    this.cognitoMethod(balanceResource, 'GET', getBalanceHandler, cognitoAuthorizer);
+
     // Output for external consumers
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: this.restApi.url,

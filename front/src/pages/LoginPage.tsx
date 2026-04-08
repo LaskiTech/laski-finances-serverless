@@ -86,7 +86,7 @@ export function LoginPage(): React.JSX.Element {
       await signInWithGoogle();
     } catch (error) {
       setServerError(
-        error instanceof Error ? error.message : "Could not start Google sign-in. Please try again.",
+        error instanceof Error ? error.message : "Não foi possível iniciar o login com Google. Tente novamente.",
       );
       setIsGoogleLoading(false);
     }
@@ -100,7 +100,7 @@ export function LoginPage(): React.JSX.Element {
     const pwdMissing = !password;
 
     setEmailError(emailResult.errors[0] ?? "");
-    setPasswordError(pwdMissing ? "Password is required" : "");
+    setPasswordError(pwdMissing ? "Senha obrigatória" : "");
 
     if (!emailResult.valid || pwdMissing) {
       return;
@@ -118,7 +118,7 @@ export function LoginPage(): React.JSX.Element {
       const redirect = searchParams.get("redirect") || "/";
       navigate(redirect);
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "An unexpected error occurred. Please try again.");
+      setServerError(error instanceof Error ? error.message : "Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +156,7 @@ export function LoginPage(): React.JSX.Element {
             lineHeight="1.2"
             mb="4"
           >
-            Take control of your finances
+            Tenha controle das suas finanças
           </Heading>
 
           <Text
@@ -165,14 +165,14 @@ export function LoginPage(): React.JSX.Element {
             lineHeight="1.7"
             mb="10"
           >
-            Track expenses, monitor income, and gain insights into your financial health — all in one place.
+            Acompanhe despesas, monitore receitas e obtenha insights sobre sua saúde financeira — tudo em um só lugar.
           </Text>
 
           <Flex gap="8" justify="center">
             {[
-              { value: "Real-time", label: "Tracking" },
-              { value: "Smart", label: "Insights" },
-              { value: "Secure", label: "Platform" },
+              { value: "Tempo real", label: "Monitoramento" },
+              { value: "Inteligente", label: "Insights" },
+              { value: "Seguro", label: "Plataforma" },
             ].map((item) => (
               <Box key={item.label} textAlign="center">
                 <Text color="#00D4AA" fontSize="lg" fontWeight="700">
@@ -258,6 +258,17 @@ export function LoginPage(): React.JSX.Element {
             </Box>
           )}
 
+          <Heading
+            as="h1"
+            fontSize="2xl"
+            fontWeight="700"
+            color="#0B1426"
+            letterSpacing="-0.02em"
+            mb="6"
+          >
+            Entrar
+          </Heading>
+
           <Stack gap="5">
             <form onSubmit={handleSubmit}>
               <Stack gap="4">
@@ -268,7 +279,7 @@ export function LoginPage(): React.JSX.Element {
                     color="#374151"
                     mb="1"
                   >
-                    Email
+                    E-mail
                   </Field.Label>
                   <Input
                     type="email"
@@ -298,7 +309,7 @@ export function LoginPage(): React.JSX.Element {
                       color="#374151"
                       mb="0"
                     >
-                      Password
+                      Senha
                     </Field.Label>
                     <Link
                       asChild
@@ -307,7 +318,7 @@ export function LoginPage(): React.JSX.Element {
                       fontWeight="500"
                       _hover={{ color: "#00B894" }}
                     >
-                      <RouterLink to="/forgot-password">Forgot password?</RouterLink>
+                      <RouterLink to="/forgot-password">Esqueceu a senha?</RouterLink>
                     </Link>
                   </Flex>
                   <Input
@@ -317,7 +328,7 @@ export function LoginPage(): React.JSX.Element {
                       setPassword(e.target.value);
                       setPasswordError("");
                     }}
-                    placeholder="Enter your password"
+                    placeholder="Digite sua senha"
                     h="48px"
                     borderRadius="10px"
                     borderColor="#E5E7EB"
@@ -344,7 +355,7 @@ export function LoginPage(): React.JSX.Element {
                   _hover={{ bg: "#162038" }}
                   transition="all 0.2s"
                 >
-                  Sign In
+                  Entrar
                 </Button>
               </Stack>
             </form>
@@ -352,7 +363,7 @@ export function LoginPage(): React.JSX.Element {
             <Flex align="center" gap="4">
               <Separator flex="1" borderColor="#E5E7EB" />
               <Text color="#9CA3AF" fontSize="xs" textTransform="uppercase" letterSpacing="0.05em" flexShrink={0}>
-                or
+                ou
               </Text>
               <Separator flex="1" borderColor="#E5E7EB" />
             </Flex>
@@ -374,19 +385,19 @@ export function LoginPage(): React.JSX.Element {
               transition="all 0.2s"
             >
               <GoogleIcon />
-              Continue with Google
+              Continuar com o Google
             </Button>
           </Stack>
 
           <Text mt="8" textAlign="center" color="#6B7280" fontSize="sm">
-            Don&apos;t have an account?{" "}
+            Não tem uma conta?{" "}
             <Link
               asChild
               color="#00D4AA"
               fontWeight="600"
               _hover={{ color: "#00B894" }}
             >
-              <RouterLink to="/signup">Sign up</RouterLink>
+              <RouterLink to="/signup">Cadastre-se</RouterLink>
             </Link>
           </Text>
         </Box>

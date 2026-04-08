@@ -53,7 +53,7 @@ export function PasswordRecoveryPage(): React.JSX.Element {
       setServerError(
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred. Please try again."
+          : "Ocorreu um erro inesperado. Tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -95,10 +95,10 @@ export function PasswordRecoveryPage(): React.JSX.Element {
           mb="2"
           textAlign="center"
         >
-          Forgot Password
+          Esqueceu a senha
         </Heading>
         <Text color="#6B7280" fontSize="sm" textAlign="center" mb="8">
-          Enter your email and we&apos;ll send you a verification code
+          Digite seu e-mail e enviaremos um código de verificação
         </Text>
 
         {serverError && (
@@ -121,7 +121,7 @@ export function PasswordRecoveryPage(): React.JSX.Element {
           <Stack gap="4">
             <Field.Root invalid={!!emailError}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Email
+                E-mail
               </Field.Label>
               <Input
                 type="email"
@@ -157,7 +157,7 @@ export function PasswordRecoveryPage(): React.JSX.Element {
               _hover={{ bg: "#162038" }}
               transition="all 0.2s"
             >
-              Send Reset Code
+              Enviar código
             </Button>
           </Stack>
         </form>
@@ -169,7 +169,7 @@ export function PasswordRecoveryPage(): React.JSX.Element {
             fontWeight="600"
             _hover={{ color: "#00B894" }}
           >
-            <RouterLink to="/login">Back to Sign In</RouterLink>
+            <RouterLink to="/login">Voltar para login</RouterLink>
           </Link>
         </Text>
       </Box>

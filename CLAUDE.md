@@ -20,9 +20,10 @@ npm test --workspace=infra            # CDK assertion tests (Jest)
 npm test --workspace=front            # Frontend tests (Vitest + RTL)
 
 # CDK operations (run from root)
-npx cdk diff --all -c env=dev
-npx cdk deploy --all -c env=dev
-npx cdk deploy --all -c env=prod
+npx cdk synth --strict -c env=dev --c googleOAuthClientId=368028870-r89ptm9ri1l5hs8akpn8b6j7varhjiin.apps.googleusercontent.com
+npx cdk diff --all -c env=dev --c googleOAuthClientId=368028870-r89ptm9ri1l5hs8akpn8b6j7varhjiin.apps.googleusercontent.com
+npx cdk deploy --all -c env=dev --c googleOAuthClientId=368028870-r89ptm9ri1l5hs8akpn8b6j7varhjiin.apps.googleusercontent.com
+npx cdk deploy --all -c env=prod --c googleOAuthClientId=368028870-r89ptm9ri1l5hs8akpn8b6j7varhjiin.apps.googleusercontent.com
 
 # Frontend local dev
 npm run front:dev

@@ -51,6 +51,23 @@ export function computeNetBalance(transactions: TransactionItem[]): BalanceSumma
 }
 
 /**
+ * Returns all YYYY-MM strings between from and to (inclusive).
+ */
+export function enumerateMonths(from: string, to: string): string[] {
+  const months: string[] = [];
+  const [fy, fm] = from.split('-').map(Number);
+  const [ty, tm] = to.split('-').map(Number);
+  let y = fy;
+  let m = fm;
+  while (y < ty || (y === ty && m <= tm)) {
+    months.push(`${y}-${String(m).padStart(2, '0')}`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return months;
+}
+
+/**
  * Returns the current month in YYYY-MM format.
  */
 export function getCurrentMonth(): string {

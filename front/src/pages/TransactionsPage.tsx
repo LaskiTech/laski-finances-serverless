@@ -8,9 +8,9 @@ import { ExpensesTab } from '../components/transactions/ExpensesTab';
 type ActiveTab = 'all' | 'income' | 'expenses';
 
 const TABS: { id: ActiveTab; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'income', label: 'Income' },
-  { id: 'expenses', label: 'Expenses' },
+  { id: 'all', label: 'Todas' },
+  { id: 'income', label: 'Receitas' },
+  { id: 'expenses', label: 'Despesas' },
 ];
 
 export function TransactionsPage(): React.JSX.Element {
@@ -35,7 +35,7 @@ export function TransactionsPage(): React.JSX.Element {
         letterSpacing="-0.02em"
         mb={6}
       >
-        Transactions
+        Transações
       </Heading>
 
       {/* Tab strip */}

@@ -16,12 +16,23 @@ export const handler = withAuth(async (event, userId, logger) => {
   const { month, type, limit, lastKey } = parsed.data;
 
   let skPrefix = "TRANS#";
+  let filterExpression: string | undefined;
+  const exprValues: Record<string, unknown> = { ":pk": `USER#${userId}` };
+  const exprNames: Record<string, string> = {};
+
   if (month) {
     skPrefix += `${month}#`;
     if (type) {
       skPrefix += `${type}#`;
     }
+  } else if (type) {
+    // No month provided — apply type filter via FilterExpression (SK prefix alone can't filter by type without a month)
+    filterExpression = "#type = :type";
+    exprValues[":type"] = type;
+    exprNames["#type"] = "type";
   }
+
+  exprValues[":skPrefix"] = skPrefix;
 
   // Decode Base64 JSON cursor from previous page response
   let exclusiveStartKey: Record<string, unknown> | undefined;
@@ -37,10 +48,9 @@ export const handler = withAuth(async (event, userId, logger) => {
     new QueryCommand({
       TableName: TABLE_NAME,
       KeyConditionExpression: "pk = :pk AND begins_with(sk, :skPrefix)",
-      ExpressionAttributeValues: {
-        ":pk": `USER#${userId}`,
-        ":skPrefix": skPrefix,
-      },
+      FilterExpression: filterExpression,
+      ExpressionAttributeValues: exprValues,
+      ...(Object.keys(exprNames).length > 0 && { ExpressionAttributeNames: exprNames }),
       ScanIndexForward: false,
       Limit: limit ?? 50,
       ExclusiveStartKey: exclusiveStartKey,

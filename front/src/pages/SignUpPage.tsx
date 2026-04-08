@@ -66,7 +66,7 @@ export function SignUpPage(): React.JSX.Element {
       setServerError(
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred. Please try again."
+          : "Ocorreu um erro inesperado. Tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -128,10 +128,10 @@ export function SignUpPage(): React.JSX.Element {
           mb="2"
           textAlign="center"
         >
-          Create your account
+          Crie sua conta
         </Heading>
         <Text color="#6B7280" fontSize="sm" textAlign="center" mb="8">
-          Start tracking your finances today
+          Comece a controlar suas finanças hoje
         </Text>
 
         {serverError && (
@@ -154,7 +154,7 @@ export function SignUpPage(): React.JSX.Element {
           <Stack gap="4">
             <Field.Root invalid={emailErrors.length > 0}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Email
+                E-mail
               </Field.Label>
               <Input
                 type="email"
@@ -180,7 +180,7 @@ export function SignUpPage(): React.JSX.Element {
 
             <Field.Root invalid={passwordErrors.length > 0}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Password
+                Senha
               </Field.Label>
               <Input
                 type="password"
@@ -189,7 +189,7 @@ export function SignUpPage(): React.JSX.Element {
                   setPassword(e.target.value);
                   setPasswordErrors([]);
                 }}
-                placeholder="Create a password"
+                placeholder="Crie uma senha"
                 h="48px"
                 borderRadius="10px"
                 borderColor="#E5E7EB"
@@ -206,7 +206,7 @@ export function SignUpPage(): React.JSX.Element {
 
             <Field.Root invalid={confirmPasswordErrors.length > 0}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Confirm Password
+                Confirmar senha
               </Field.Label>
               <Input
                 type="password"
@@ -215,7 +215,7 @@ export function SignUpPage(): React.JSX.Element {
                   setConfirmPassword(e.target.value);
                   setConfirmPasswordErrors([]);
                 }}
-                placeholder="Confirm your password"
+                placeholder="Confirme sua senha"
                 h="48px"
                 borderRadius="10px"
                 borderColor="#E5E7EB"
@@ -244,20 +244,20 @@ export function SignUpPage(): React.JSX.Element {
               _hover={{ bg: "#162038" }}
               transition="all 0.2s"
             >
-              Sign Up
+              Cadastrar
             </Button>
           </Stack>
         </form>
 
         <Text mt="8" textAlign="center" color="#6B7280" fontSize="sm">
-          Already have an account?{" "}
+          Já tem uma conta?{" "}
           <Link
             asChild
             color="#00D4AA"
             fontWeight="600"
             _hover={{ color: "#00B894" }}
           >
-            <RouterLink to="/login">Sign in</RouterLink>
+            <RouterLink to="/login">Entrar</RouterLink>
           </Link>
         </Text>
       </Box>
