@@ -18,11 +18,11 @@ import {
 } from '../api/transactions';
 
 const ExpenseFormSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  totalAmount: z.number().positive('Amount must be positive'),
-  date: z.string().min(1, 'Date is required'),
-  source: z.string().min(1, 'Source is required'),
-  category: z.string().min(1, 'Category is required'),
+  description: z.string().min(1, 'Descrição obrigatória'),
+  totalAmount: z.number().positive('Valor deve ser positivo'),
+  date: z.string().min(1, 'Data obrigatória'),
+  source: z.string().min(1, 'Fonte obrigatória'),
+  category: z.string().min(1, 'Categoria obrigatória'),
   installments: z.number().int().min(1).default(1),
 });
 
@@ -92,7 +92,7 @@ export function ExpenseFormPage(): React.JSX.Element {
         });
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Failed to load expense';
+          err instanceof Error ? err.message : 'Falha ao carregar despesa';
         setApiError(message);
       } finally {
         setLoadingTransaction(false);
@@ -170,7 +170,7 @@ export function ExpenseFormPage(): React.JSX.Element {
       navigate('/transactions?tab=expenses');
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'An unexpected error occurred';
+        err instanceof Error ? err.message : 'Ocorreu um erro inesperado';
       setApiError(message);
     } finally {
       setSubmitting(false);
@@ -202,7 +202,7 @@ export function ExpenseFormPage(): React.JSX.Element {
         letterSpacing="-0.02em"
         mb={6}
       >
-        {isEditMode ? 'Edit Expense' : 'New Expense'}
+        {isEditMode ? 'Editar despesa' : 'Nova despesa'}
       </Heading>
 
       <Box
@@ -215,7 +215,7 @@ export function ExpenseFormPage(): React.JSX.Element {
         <form onSubmit={(e) => void handleSubmit(e)}>
           <Flex direction="column" gap={4}>
             <Field.Root invalid={!!errors.description}>
-              <Field.Label {...labelStyles}>Description</Field.Label>
+              <Field.Label {...labelStyles}>Descrição</Field.Label>
               <Input
                 name="description"
                 value={form.description}
@@ -228,7 +228,7 @@ export function ExpenseFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.totalAmount}>
-              <Field.Label {...labelStyles}>Total Amount</Field.Label>
+              <Field.Label {...labelStyles}>Valor total</Field.Label>
               <Input
                 name="totalAmount"
                 type="number"
@@ -243,7 +243,7 @@ export function ExpenseFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.date}>
-              <Field.Label {...labelStyles}>Date</Field.Label>
+              <Field.Label {...labelStyles}>Data</Field.Label>
               <Input
                 name="date"
                 type="date"
@@ -257,7 +257,7 @@ export function ExpenseFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.source}>
-              <Field.Label {...labelStyles}>Source</Field.Label>
+              <Field.Label {...labelStyles}>Fonte</Field.Label>
               <Input
                 name="source"
                 value={form.source}
@@ -270,7 +270,7 @@ export function ExpenseFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.category}>
-              <Field.Label {...labelStyles}>Category</Field.Label>
+              <Field.Label {...labelStyles}>Categoria</Field.Label>
               <Input
                 name="category"
                 value={form.category}
@@ -284,7 +284,7 @@ export function ExpenseFormPage(): React.JSX.Element {
 
             {!isEditMode && (
               <Field.Root invalid={!!errors.installments}>
-                <Field.Label {...labelStyles}>Installments</Field.Label>
+                <Field.Label {...labelStyles}>Parcelas</Field.Label>
                 <Input
                   name="installments"
                   type="number"
@@ -296,12 +296,12 @@ export function ExpenseFormPage(): React.JSX.Element {
                 />
                 {installmentValue !== null && (
                   <Text fontSize="xs" color="#6B7280" mt="1">
-                    Amount will be split into {installmentCount} monthly payments of{' '}
+                    O valor será dividido em {installmentCount} parcelas mensais de{' '}
                     {installmentValue.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}{' '}
-                    each.
+                    cada.
                   </Text>
                 )}
                 {errors.installments && (
@@ -337,7 +337,7 @@ export function ExpenseFormPage(): React.JSX.Element {
                 loading={submitting}
                 _hover={{ bg: '#162038' }}
               >
-                {isEditMode ? 'Update' : 'Create'}
+                {isEditMode ? 'Atualizar' : 'Criar'}
               </Button>
               <Button
                 flex="1"
@@ -351,7 +351,7 @@ export function ExpenseFormPage(): React.JSX.Element {
                 _hover={{ bg: '#F9FAFB', borderColor: '#D1D5DB' }}
                 onClick={() => navigate('/transactions?tab=expenses')}
               >
-                Cancel
+                Cancelar
               </Button>
             </Flex>
           </Flex>

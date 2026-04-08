@@ -15,7 +15,8 @@
       "mcp__playwright__browser_take_screenshot",
       "Bash(npm run:*)",
       "mcp__playwright__browser_resize",
-      "Bash(jq --version)"
+      "Bash(jq --version)",
+      "Bash(git:*)"
     ]
   }
 }

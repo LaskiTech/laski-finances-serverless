@@ -15,6 +15,7 @@ import {
   deleteTransaction,
   type TransactionItem,
 } from '../../api/transactions';
+import { deleteIncome } from '../../api/income';
 import { formatCurrency, formatDate } from '../../utils/format';
 
 interface AllTabProps {
@@ -31,8 +32,8 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await listTransactions(month || undefined);
-      setTransactions([...data].sort((a, b) => a.date.localeCompare(b.date)));
+      const items = await listTransactions(month || undefined);
+      setTransactions([...items].sort((a, b) => a.date.localeCompare(b.date)));
     } catch (error) {
       console.error('Failed to fetch transactions:', error);
       setTransactions([]);
@@ -46,16 +47,20 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
   }, [fetchTransactions]);
 
   const handleDelete = async (tx: TransactionItem): Promise<void> => {
-    const confirmed = window.confirm('Are you sure you want to delete this transaction?');
+    const confirmed = window.confirm('Tem certeza que deseja excluir esta transação?');
     if (!confirmed) return;
 
     let deleteGroup = false;
     if (tx.installmentTotal > 1) {
-      deleteGroup = window.confirm('Delete all installments in this group?');
+      deleteGroup = window.confirm('Excluir todas as parcelas deste grupo?');
     }
 
     try {
-      await deleteTransaction(tx.sk, deleteGroup);
+      if (tx.type === 'INC') {
+        await deleteIncome(tx.sk, deleteGroup);
+      } else {
+        await deleteTransaction(tx.sk, deleteGroup);
+      }
       await fetchTransactions();
     } catch (error) {
       console.error('Failed to delete transaction:', error);
@@ -98,7 +103,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
             _hover={{ bg: '#162038' }}
             onClick={() => setMenuOpen((prev) => !prev)}
           >
-            New Transaction ▾
+            Nova transação ▾
           </Button>
           {menuOpen && (
             <Box
@@ -130,7 +135,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
                   navigate('/transactions/income/new');
                 }}
               >
-                Income
+                Receita
               </Button>
               <Button
                 variant="ghost"
@@ -148,7 +153,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
                   navigate('/transactions/expense/new');
                 }}
               >
-                Expense
+                Despesa
               </Button>
             </Box>
           )}
@@ -169,7 +174,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
           borderColor="#E5E7EB"
           py={16}
         >
-          <Text color="#9CA3AF" fontSize="sm">No transactions found.</Text>
+          <Text color="#9CA3AF" fontSize="sm">Nenhuma transação encontrada.</Text>
         </Flex>
       ) : (
         <Box
@@ -182,14 +187,14 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
           <Table.Root>
             <Table.Header>
               <Table.Row bg="#FAFBFC">
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Date</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Description</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Type</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Category</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Source</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Amount</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Installment</Table.ColumnHeader>
-                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Actions</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Data</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Descrição</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Tipo</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Categoria</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Fonte</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Valor</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Parcela</Table.ColumnHeader>
+                <Table.ColumnHeader fontSize="xs" color="#6B7280" textTransform="uppercase" letterSpacing="0.05em" fontWeight="600">Ações</Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -228,7 +233,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
                         _hover={{ bg: '#F9FAFB', borderColor: '#D1D5DB' }}
                         onClick={() => navigate(getEditPath(tx))}
                       >
-                        Edit
+                        Editar
                       </Button>
                       <Button
                         size="sm"
@@ -240,7 +245,7 @@ export function AllTab({ month, onMonthChange }: AllTabProps): React.JSX.Element
                         _hover={{ bg: '#FEF2F2', borderColor: '#DC2626' }}
                         onClick={() => void handleDelete(tx)}
                       >
-                        Delete
+                        Excluir
                       </Button>
                     </Flex>
                   </Table.Cell>

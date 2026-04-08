@@ -19,11 +19,11 @@ import {
 } from '../api/income';
 
 const IncomeFormSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  totalAmount: z.number().positive('Amount must be positive'),
-  date: z.string().min(1, 'Date is required'),
-  source: z.string().min(1, 'Source is required'),
-  category: z.string().min(1, 'Category is required'),
+  description: z.string().min(1, 'Descrição obrigatória'),
+  totalAmount: z.number().positive('Valor deve ser positivo'),
+  date: z.string().min(1, 'Data obrigatória'),
+  source: z.string().min(1, 'Fonte obrigatória'),
+  category: z.string().min(1, 'Categoria obrigatória'),
 });
 
 interface FormState {
@@ -106,7 +106,7 @@ export function IncomeFormPage(): React.JSX.Element {
         setIsRecurringEntry(!!item.isRecurring);
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : 'Failed to load income entry';
+          err instanceof Error ? err.message : 'Falha ao carregar receita';
         setApiError(message);
       } finally {
         setLoadingIncome(false);
@@ -164,7 +164,7 @@ export function IncomeFormPage(): React.JSX.Element {
         let updateGroup = false;
         if (isRecurringEntry) {
           updateGroup = window.confirm(
-            'Update this and all future entries in this recurring series?',
+            'Atualizar esta e todas as entradas futuras desta série recorrente?',
           );
         }
 
@@ -198,7 +198,7 @@ export function IncomeFormPage(): React.JSX.Element {
       navigate('/transactions?tab=income');
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : 'An unexpected error occurred';
+        err instanceof Error ? err.message : 'Ocorreu um erro inesperado';
       setApiError(message);
     } finally {
       setSubmitting(false);
@@ -223,7 +223,7 @@ export function IncomeFormPage(): React.JSX.Element {
         letterSpacing="-0.02em"
         mb={6}
       >
-        {isEditMode ? 'Edit Income' : 'New Income'}
+        {isEditMode ? 'Editar receita' : 'Nova receita'}
       </Heading>
 
       <Box
@@ -236,7 +236,7 @@ export function IncomeFormPage(): React.JSX.Element {
         <form onSubmit={(e) => void handleSubmit(e)}>
           <Flex direction="column" gap={4}>
             <Field.Root invalid={!!errors.description}>
-              <Field.Label {...labelStyles}>Description</Field.Label>
+              <Field.Label {...labelStyles}>Descrição</Field.Label>
               <Input
                 name="description"
                 value={form.description}
@@ -249,7 +249,7 @@ export function IncomeFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.totalAmount}>
-              <Field.Label {...labelStyles}>Amount</Field.Label>
+              <Field.Label {...labelStyles}>Valor</Field.Label>
               <Input
                 name="totalAmount"
                 type="number"
@@ -264,7 +264,7 @@ export function IncomeFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.date}>
-              <Field.Label {...labelStyles}>Date</Field.Label>
+              <Field.Label {...labelStyles}>Data</Field.Label>
               <Input
                 name="date"
                 type="date"
@@ -278,7 +278,7 @@ export function IncomeFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.source}>
-              <Field.Label {...labelStyles}>Source</Field.Label>
+              <Field.Label {...labelStyles}>Fonte</Field.Label>
               <Input
                 name="source"
                 value={form.source}
@@ -291,7 +291,7 @@ export function IncomeFormPage(): React.JSX.Element {
             </Field.Root>
 
             <Field.Root invalid={!!errors.category}>
-              <Field.Label {...labelStyles}>Category</Field.Label>
+              <Field.Label {...labelStyles}>Categoria</Field.Label>
               <Input
                 name="category"
                 value={form.category}
@@ -321,7 +321,7 @@ export function IncomeFormPage(): React.JSX.Element {
                     }
                     style={{ accentColor: '#00D4AA', width: 16, height: 16 }}
                   />
-                  <Text fontSize="sm" fontWeight="500" color="#374151">Recurring income</Text>
+                  <Text fontSize="sm" fontWeight="500" color="#374151">Receita recorrente</Text>
                 </Flex>
 
                 {form.isRecurring && (
@@ -334,7 +334,7 @@ export function IncomeFormPage(): React.JSX.Element {
                   >
                     <Flex direction="column" gap={3}>
                       <Field.Root>
-                        <Field.Label {...labelStyles}>Frequency</Field.Label>
+                        <Field.Label {...labelStyles}>Frequência</Field.Label>
                         <NativeSelect.Root>
                           <NativeSelect.Field
                             name="frequency"
@@ -346,14 +346,14 @@ export function IncomeFormPage(): React.JSX.Element {
                             bg="white"
                             fontSize="sm"
                           >
-                            <option value="monthly">Monthly</option>
-                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Mensal</option>
+                            <option value="weekly">Semanal</option>
                           </NativeSelect.Field>
                         </NativeSelect.Root>
                       </Field.Root>
 
                       <Field.Root>
-                        <Field.Label {...labelStyles}>Ends by</Field.Label>
+                        <Field.Label {...labelStyles}>Termina em</Field.Label>
                         <NativeSelect.Root>
                           <NativeSelect.Field
                             name="recurrenceMode"
@@ -365,15 +365,15 @@ export function IncomeFormPage(): React.JSX.Element {
                             bg="white"
                             fontSize="sm"
                           >
-                            <option value="occurrences">Number of occurrences</option>
-                            <option value="endDate">End date</option>
+                            <option value="occurrences">Número de ocorrências</option>
+                            <option value="endDate">Data de término</option>
                           </NativeSelect.Field>
                         </NativeSelect.Root>
                       </Field.Root>
 
                       {form.recurrenceMode === 'occurrences' ? (
                         <Field.Root>
-                          <Field.Label {...labelStyles}>Occurrences</Field.Label>
+                          <Field.Label {...labelStyles}>Ocorrências</Field.Label>
                           <Input
                             name="occurrences"
                             type="number"
@@ -386,7 +386,7 @@ export function IncomeFormPage(): React.JSX.Element {
                         </Field.Root>
                       ) : (
                         <Field.Root>
-                          <Field.Label {...labelStyles}>End date</Field.Label>
+                          <Field.Label {...labelStyles}>Data de término</Field.Label>
                           <Input
                             name="endDate"
                             type="date"
@@ -429,7 +429,7 @@ export function IncomeFormPage(): React.JSX.Element {
                 loading={submitting}
                 _hover={{ bg: "#162038" }}
               >
-                {isEditMode ? 'Update' : 'Create'}
+                {isEditMode ? 'Atualizar' : 'Criar'}
               </Button>
               <Button
                 flex="1"
@@ -443,7 +443,7 @@ export function IncomeFormPage(): React.JSX.Element {
                 _hover={{ bg: "#F9FAFB", borderColor: "#D1D5DB" }}
                 onClick={() => navigate('/transactions?tab=income')}
               >
-                Cancel
+                Cancelar
               </Button>
             </Flex>
           </Flex>

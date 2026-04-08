@@ -12,7 +12,7 @@ import { useAuth } from "../auth/useAuth";
 
 const NAV_LINKS = [
   { label: "Dashboard", path: "/dashboard" },
-  { label: "Transactions", path: "/transactions" },
+  { label: "Transações", path: "/transactions" },
 ] as const;
 
 function LaskiLogoSmall(): React.JSX.Element {
@@ -59,7 +59,7 @@ export function AppLayout(): React.JSX.Element {
       >
         <Flex align="center" gap="3">
           <IconButton
-            aria-label="Open menu"
+            aria-label="Abrir menu"
             variant="ghost"
             size="sm"
             color="whiteAlpha.800"
@@ -88,7 +88,7 @@ export function AppLayout(): React.JSX.Element {
           _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.300" }}
           onClick={() => void handleSignOut()}
         >
-          Sign out
+          Sair
         </Button>
       </Flex>
 
@@ -105,7 +105,7 @@ export function AppLayout(): React.JSX.Element {
               <Flex align="center" gap="2">
                 <LaskiLogoSmall />
                 <Drawer.Title color="white" fontWeight="700" letterSpacing="-0.02em">
-                  Navigation
+                  Navegação
                 </Drawer.Title>
               </Flex>
             </Drawer.Header>

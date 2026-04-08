@@ -21,7 +21,7 @@ export function AuthCallbackPage(): React.JSX.Element {
       } else {
         navigate("/login", {
           replace: true,
-          state: { error: "Sign-in with Google failed. Please try again." },
+          state: { error: "Login com Google falhou. Tente novamente." },
         });
       }
       return;
@@ -55,7 +55,7 @@ export function AuthCallbackPage(): React.JSX.Element {
         textAlign="center"
       >
         <Spinner color="#00D4AA" size="lg" mb="4" />
-        <Text color="#6B7280" fontSize="sm">Completing sign-in...</Text>
+        <Text color="#6B7280" fontSize="sm">Concluindo login...</Text>
       </Box>
     </Flex>
   );

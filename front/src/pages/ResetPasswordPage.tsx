@@ -55,10 +55,10 @@ export function ResetPasswordPage(): React.JSX.Element {
             <LaskiLogo />
           </Flex>
           <Heading as="h1" fontSize="2xl" fontWeight="700" color="#0B1426" mb="4">
-            Missing Email
+            E-mail não informado
           </Heading>
           <Text color="#6B7280" fontSize="sm" mb="6">
-            No email address was provided. Please request a password reset first.
+            Nenhum e-mail foi fornecido. Solicite a redefinição de senha primeiro.
           </Text>
           <Link
             asChild
@@ -66,7 +66,7 @@ export function ResetPasswordPage(): React.JSX.Element {
             fontWeight="600"
             _hover={{ color: "#00B894" }}
           >
-            <RouterLink to="/forgot-password">Go to Forgot Password</RouterLink>
+            <RouterLink to="/forgot-password">Ir para esqueci a senha</RouterLink>
           </Link>
         </Box>
       </Flex>
@@ -82,7 +82,7 @@ export function ResetPasswordPage(): React.JSX.Element {
     const passwordResult = validatePassword(newPassword);
     const matchResult = validatePasswordMatch(newPassword, confirmPassword);
 
-    setCodeError(codeInvalid ? "Verification code is required" : "");
+    setCodeError(codeInvalid ? "Código de verificação obrigatório" : "");
     setPasswordErrors(passwordResult.errors);
     setConfirmPasswordErrors(matchResult.errors);
 
@@ -98,7 +98,7 @@ export function ResetPasswordPage(): React.JSX.Element {
       setServerError(
         error instanceof Error
           ? error.message
-          : "An unexpected error occurred. Please try again."
+          : "Ocorreu um erro inesperado. Tente novamente."
       );
     } finally {
       setIsLoading(false);
@@ -140,10 +140,10 @@ export function ResetPasswordPage(): React.JSX.Element {
           mb="2"
           textAlign="center"
         >
-          Reset Password
+          Redefinir senha
         </Heading>
         <Text color="#6B7280" fontSize="sm" textAlign="center" mb="8">
-          Enter the code sent to {email} and your new password
+          Digite o código enviado para {email} e sua nova senha
         </Text>
 
         {serverError && (
@@ -166,7 +166,7 @@ export function ResetPasswordPage(): React.JSX.Element {
           <Stack gap="4">
             <Field.Root invalid={!!codeError}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Verification Code
+                Código de verificação
               </Field.Label>
               <Input
                 type="text"
@@ -176,7 +176,7 @@ export function ResetPasswordPage(): React.JSX.Element {
                   setCode(e.target.value);
                   setCodeError("");
                 }}
-                placeholder="Enter 6-digit code"
+                placeholder="Digite o código de 6 dígitos"
                 maxLength={6}
                 h="48px"
                 borderRadius="10px"
@@ -194,7 +194,7 @@ export function ResetPasswordPage(): React.JSX.Element {
 
             <Field.Root invalid={passwordErrors.length > 0}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                New Password
+                Nova senha
               </Field.Label>
               <Input
                 type="password"
@@ -203,7 +203,7 @@ export function ResetPasswordPage(): React.JSX.Element {
                   setNewPassword(e.target.value);
                   setPasswordErrors([]);
                 }}
-                placeholder="Enter new password"
+                placeholder="Digite a nova senha"
                 h="48px"
                 borderRadius="10px"
                 borderColor="#E5E7EB"
@@ -220,7 +220,7 @@ export function ResetPasswordPage(): React.JSX.Element {
 
             <Field.Root invalid={confirmPasswordErrors.length > 0}>
               <Field.Label fontSize="sm" fontWeight="500" color="#374151" mb="1">
-                Confirm Password
+                Confirmar senha
               </Field.Label>
               <Input
                 type="password"
@@ -229,7 +229,7 @@ export function ResetPasswordPage(): React.JSX.Element {
                   setConfirmPassword(e.target.value);
                   setConfirmPasswordErrors([]);
                 }}
-                placeholder="Confirm new password"
+                placeholder="Confirme a nova senha"
                 h="48px"
                 borderRadius="10px"
                 borderColor="#E5E7EB"
@@ -258,7 +258,7 @@ export function ResetPasswordPage(): React.JSX.Element {
               _hover={{ bg: "#162038" }}
               transition="all 0.2s"
             >
-              Reset Password
+              Redefinir senha
             </Button>
           </Stack>
         </form>
@@ -270,7 +270,7 @@ export function ResetPasswordPage(): React.JSX.Element {
             fontWeight="600"
             _hover={{ color: "#00B894" }}
           >
-            <RouterLink to="/login">Back to Sign In</RouterLink>
+            <RouterLink to="/login">Voltar para login</RouterLink>
           </Link>
         </Text>
       </Box>
