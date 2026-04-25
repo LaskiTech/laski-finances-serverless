@@ -13,6 +13,7 @@ export class DataStack extends cdk.Stack {
   public readonly ledgerTable: dynamodb.Table;
   public readonly summaryTable: dynamodb.Table;
   public readonly linksTable: dynamodb.Table;
+  public readonly statementsTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: DataStackProps) {
     super(scope, id, props);
@@ -47,6 +48,16 @@ export class DataStack extends cdk.Stack {
       partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'categoryMonth', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Sparse GSI for idempotent re-import of statement transactions.
+    // Only items that carry an `importHash` attribute participate — manual
+    // Ledger entries (no importHash) are not indexed.
+    this.ledgerTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_LedgerByImportHash',
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'importHash', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.KEYS_ONLY,
     });
 
     // MonthlySummary table — pre-aggregated monthly totals per user
@@ -87,6 +98,32 @@ export class DataStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    // Statements table — tracks upload lifecycle + draft extracted transactions
+    this.statementsTable = new dynamodb.Table(this, 'StatementsTable', {
+      tableName: `${prefix}-Statements`,
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'sk', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      deletionProtection: true,
+    });
+
+    // GSI for S3 event → Statement lookup by object key
+    this.statementsTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_StatementsByS3Key',
+      partitionKey: { name: 's3Key', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // GSI for reconciliation: find credit-card statements by due date
+    this.statementsTable.addGlobalSecondaryIndex({
+      indexName: 'GSI_StatementsByDocumentTypeDueDate',
+      partitionKey: { name: 'pk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'documentTypeDueDate', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // Outputs for external consumers
     new cdk.CfnOutput(this, 'LedgerTableName', {
       value: this.ledgerTable.tableName,
@@ -98,6 +135,14 @@ export class DataStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'LinksTableName', {
       value: this.linksTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'StatementsTableName', {
+      value: this.statementsTable.tableName,
+    });
+
+    new cdk.CfnOutput(this, 'StatementsTableArn', {
+      value: this.statementsTable.tableArn,
     });
   }
 }

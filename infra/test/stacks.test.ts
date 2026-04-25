@@ -178,6 +178,33 @@ describe('DataStack', () => {
     expect(stack.linksTable).toBeDefined();
     expect(stack.linksTable.tableName).toBeDefined();
   });
+
+  test('creates GSI_LedgerByImportHash sparse KEYS_ONLY on Ledger', () => {
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+      TableName: 'laskifin-Ledger',
+      GlobalSecondaryIndexes: Match.arrayWith([
+        Match.objectLike({
+          IndexName: 'GSI_LedgerByImportHash',
+          Projection: { ProjectionType: 'KEYS_ONLY' },
+        }),
+      ]),
+    });
+  });
+
+  test('creates Statements table with GSIs', () => {
+    template.hasResourceProperties('AWS::DynamoDB::Table', {
+      TableName: 'laskifin-Statements',
+      GlobalSecondaryIndexes: Match.arrayWith([
+        Match.objectLike({ IndexName: 'GSI_StatementsByS3Key' }),
+        Match.objectLike({ IndexName: 'GSI_StatementsByDocumentTypeDueDate' }),
+      ]),
+    });
+  });
+
+  test('exposes statementsTable as public property', () => {
+    expect(stack.statementsTable).toBeDefined();
+    expect(stack.statementsTable.tableName).toBeDefined();
+  });
 });
 
 describe('ApiStack', () => {
@@ -200,6 +227,7 @@ describe('ApiStack', () => {
     ledgerTable: dataStack.ledgerTable,
     summaryTable: dataStack.summaryTable,
     linksTable: dataStack.linksTable,
+    statementsTable: dataStack.statementsTable,
   });
   const template = Template.fromStack(stack);
 
@@ -236,7 +264,7 @@ describe('ApiStack', () => {
     test('preserves resource counts for REST API, Log Group, Lambda, and Authorizer', () => {
       template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
       template.resourceCountIs('AWS::Logs::LogGroup', 1);
-      template.resourceCountIs('AWS::Lambda::Function', 14);
+      template.resourceCountIs('AWS::Lambda::Function', 21);
       template.resourceCountIs('AWS::ApiGateway::Authorizer', 1);
     });
 
@@ -431,6 +459,112 @@ describe('ApiStack', () => {
           },
         });
       }
+    });
+  });
+
+  describe('Statement Import handlers', () => {
+    test('creates 5 statement Lambda handlers', () => {
+      for (const name of [
+        'initStatementUpload',
+        'processStatement',
+        'reviewStatement',
+        'confirmStatementImport',
+        'listStatements',
+        'deleteStatement',
+      ]) {
+        template.hasResourceProperties('AWS::Lambda::Function', {
+          FunctionName: `laskifin-${name}`,
+          Runtime: 'nodejs22.x',
+        });
+      }
+    });
+
+    test('process-statement Lambda has 512 MB memory and 90 s timeout', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'laskifin-processStatement',
+        MemorySize: 512,
+        Timeout: 90,
+      });
+    });
+
+    test('confirm-statement-import Lambda has 512 MB memory and 30 s timeout', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'laskifin-confirmStatementImport',
+        MemorySize: 512,
+        Timeout: 30,
+      });
+    });
+
+    test('init-statement-upload Lambda has STATEMENTS_BUCKET_NAME env var', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'laskifin-initStatementUpload',
+        Environment: {
+          Variables: Match.objectLike({
+            STATEMENTS_TABLE_NAME: Match.anyValue(),
+            STATEMENTS_BUCKET_NAME: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    test('confirm-statement-import Lambda has all required env vars', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        FunctionName: 'laskifin-confirmStatementImport',
+        Environment: {
+          Variables: Match.objectLike({
+            STATEMENTS_TABLE_NAME: Match.anyValue(),
+            TABLE_NAME: Match.anyValue(),
+            SUMMARY_TABLE_NAME: Match.anyValue(),
+            LINKS_TABLE_NAME: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    test('statements bucket is created with versioning and block-public-access', () => {
+      template.hasResourceProperties('AWS::S3::Bucket', {
+        BucketName: 'laskifin-statements',
+        VersioningConfiguration: { Status: 'Enabled' },
+        PublicAccessBlockConfiguration: {
+          BlockPublicAcls: true,
+          BlockPublicPolicy: true,
+          IgnorePublicAcls: true,
+          RestrictPublicBuckets: true,
+        },
+      });
+    });
+
+    test('statements bucket has Glacier transition lifecycle rule after 90 days', () => {
+      template.hasResourceProperties('AWS::S3::Bucket', {
+        BucketName: 'laskifin-statements',
+        LifecycleConfiguration: {
+          Rules: Match.arrayWith([
+            Match.objectLike({
+              Status: 'Enabled',
+              Transitions: Match.arrayWith([
+                Match.objectLike({
+                  StorageClass: 'GLACIER',
+                  TransitionInDays: 90,
+                }),
+              ]),
+            }),
+          ]),
+        },
+      });
+    });
+
+    test('statements routes use Cognito authorizer', () => {
+      // /statements (POST, GET), /statements/{statementId} (GET, DELETE),
+      // /statements/{statementId}/confirm (POST) — 5 methods + CORS OPTIONS.
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'statements',
+      });
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: '{statementId}',
+      });
+      template.hasResourceProperties('AWS::ApiGateway::Resource', {
+        PathPart: 'confirm',
+      });
     });
   });
 

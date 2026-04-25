@@ -20,14 +20,16 @@ import { formatCurrency, formatDate } from '../utils/format';
 
 interface LinkWidgetProps {
   sk: string;
+  typeFilter?: 'INC' | 'EXP';
 }
 
-export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
+export function LinkWidget({ sk, typeFilter }: LinkWidgetProps): React.JSX.Element {
   const [asParent, setAsParent] = useState<LinkEntry[]>([]);
   const [asChild, setAsChild] = useState<LinkEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [monthQuery, setMonthQuery] = useState('');
+  const [sourceQuery, setSourceQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TransactionItem[]>([]);
   const [searching, setSearching] = useState(false);
 
@@ -49,19 +51,24 @@ export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
   }, [fetchLinks]);
 
   const handleSearch = async (): Promise<void> => {
-    if (!searchQuery.trim()) return;
+    const month = /^\d{4}-\d{2}$/.test(monthQuery.trim()) ? monthQuery.trim() : undefined;
+    const source = sourceQuery.trim().toLowerCase();
+    if (!month && !source) return;
     setSearching(true);
     try {
-      // Search using month filter if it looks like YYYY-MM
-      const month = /^\d{4}-\d{2}$/.test(searchQuery.trim()) ? searchQuery.trim() : undefined;
-      const results = await listTransactions(month);
-      // Filter out the current entry and already-linked entries
+      const results = await listTransactions(month, typeFilter);
       const linkedSks = new Set([
         ...asParent.map((l) => l.childSk),
         ...asChild.map((l) => l.parentSk),
         sk,
       ]);
-      setSearchResults(results.filter((tx) => !linkedSks.has(tx.sk)));
+      setSearchResults(
+        results.filter((tx) => {
+          if (linkedSks.has(tx.sk)) return false;
+          if (source && !tx.source.toLowerCase().includes(source)) return false;
+          return true;
+        }),
+      );
     } catch (error) {
       console.error('Search failed:', error);
     } finally {
@@ -73,7 +80,8 @@ export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
     try {
       await createLink(sk, targetSk);
       setShowSearch(false);
-      setSearchQuery('');
+      setMonthQuery('');
+      setSourceQuery('');
       setSearchResults([]);
       await fetchLinks();
     } catch (error) {
@@ -153,15 +161,28 @@ export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
           borderColor="#E5E7EB"
           p={3}
         >
-          <Flex gap={2} mb={2}>
+          <Flex gap={2} mb={2} wrap="wrap">
             <Input
-              placeholder="Search by month (YYYY-MM)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleSearch();
-              }}
+              placeholder="Mês (YYYY-MM)"
+              value={monthQuery}
+              onChange={(e) => setMonthQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleSearch(); }}
               h="36px"
+              w="130px"
+              flexShrink={0}
+              borderRadius="8px"
+              borderColor="#E5E7EB"
+              bg="white"
+              fontSize="sm"
+            />
+            <Input
+              placeholder="Fonte"
+              value={sourceQuery}
+              onChange={(e) => setSourceQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleSearch(); }}
+              h="36px"
+              flex="1"
+              minW="100px"
               borderRadius="8px"
               borderColor="#E5E7EB"
               bg="white"
@@ -177,7 +198,7 @@ export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
               loading={searching}
               onClick={() => void handleSearch()}
             >
-              Search
+              Buscar
             </Button>
             <Button
               size="sm"
@@ -189,10 +210,11 @@ export function LinkWidget({ sk }: LinkWidgetProps): React.JSX.Element {
               onClick={() => {
                 setShowSearch(false);
                 setSearchResults([]);
-                setSearchQuery('');
+                setMonthQuery('');
+                setSourceQuery('');
               }}
             >
-              Cancel
+              Cancelar
             </Button>
           </Flex>
 

@@ -17,6 +17,7 @@ import {
   getIncome,
   updateIncome,
 } from '../api/income';
+import { LinkWidget } from '../components/LinkWidget';
 
 const IncomeFormSchema = z.object({
   description: z.string().min(1, 'Descrição obrigatória'),
@@ -449,6 +450,8 @@ export function IncomeFormPage(): React.JSX.Element {
           </Flex>
         </form>
       </Box>
+
+      {isEditMode && <LinkWidget sk={decodedSk} />}
     </Box>
   );
 }

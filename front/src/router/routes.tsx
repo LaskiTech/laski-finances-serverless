@@ -11,6 +11,7 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
 import { IncomeFormPage } from "../pages/IncomeFormPage";
 import { ExpenseFormPage } from "../pages/ExpenseFormPage";
+import { StatementImportPage } from "../pages/StatementImportPage";
 
 export function AppRoutes(): React.JSX.Element {
   return (
@@ -38,6 +39,7 @@ export function AppRoutes(): React.JSX.Element {
         <Route path="/transactions/income/edit/:sk" element={<IncomeFormPage />} />
         <Route path="/transactions/expense/new" element={<ExpenseFormPage />} />
         <Route path="/transactions/expense/edit/:sk" element={<ExpenseFormPage />} />
+        <Route path="/statements/import" element={<StatementImportPage />} />
       </Route>
     </Routes>
   );

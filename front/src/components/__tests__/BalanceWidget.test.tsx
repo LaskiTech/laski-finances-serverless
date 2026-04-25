@@ -104,9 +104,9 @@ describe('BalanceWidget', () => {
     expect(screen.getByText(brl('R$ 5.000,00'))).toBeInTheDocument();
     expect(screen.getByText(brl('R$ 3.200,00'))).toBeInTheDocument();
     expect(screen.getByText(brl('R$ 1.800,00'))).toBeInTheDocument();
-    expect(screen.getByText(/income/i)).toBeInTheDocument();
-    expect(screen.getByText(/expenses/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/balance/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/receitas/i)).toBeInTheDocument();
+    expect(screen.getByText(/despesas/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/saldo/i).length).toBeGreaterThanOrEqual(1);
   });
 
   // Requirement 3.4 — balance green when >= 0
@@ -138,14 +138,14 @@ describe('BalanceWidget', () => {
   it('shows error alert with retry button when error is set', () => {
     renderWidget({ error: 'Network error' });
     expect(screen.getByText('Network error')).toBeInTheDocument();
-    expect(screen.getByText('Retry')).toBeInTheDocument();
+    expect(screen.getByText('Tentar novamente')).toBeInTheDocument();
   });
 
   // Retry button calls onRetry
   it('calls onRetry when Retry button is clicked', async () => {
     const onRetry = vi.fn();
     renderWidget({ error: 'Network error', onRetry });
-    await userEvent.click(screen.getByText('Retry'));
+    await userEvent.click(screen.getByText('Tentar novamente'));
     expect(onRetry).toHaveBeenCalledOnce();
   });
 
@@ -162,11 +162,11 @@ describe('BalanceWidget', () => {
   it('renders range table with totals row when rangeData is provided', () => {
     renderWidget({ mode: 'range', rangeData: makeRangeResponse() });
 
-    expect(screen.getByText('Total')).toBeInTheDocument();
+    expect(screen.getByText('Total geral')).toBeInTheDocument();
 
     const tfoot = document.querySelector('tfoot');
     expect(tfoot).not.toBeNull();
-    const totalsRow = within(tfoot!).getByText('Total');
+    const totalsRow = within(tfoot!).getByText('Total geral');
     expect(totalsRow).toBeInTheDocument();
   });
 });

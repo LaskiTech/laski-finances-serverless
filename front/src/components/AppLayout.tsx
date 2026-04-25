@@ -13,6 +13,7 @@ import { useAuth } from "../auth/useAuth";
 const NAV_LINKS = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Transações", path: "/transactions" },
+  { label: "Importar extrato", path: "/statements/import" },
 ] as const;
 
 function LaskiLogoSmall(): React.JSX.Element {
