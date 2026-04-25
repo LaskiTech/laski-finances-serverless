@@ -40,6 +40,7 @@ const apiStack = new ApiStack(app, `${prefix}-api-stack`, {
   ledgerTable: dataStack.ledgerTable,
   summaryTable: dataStack.summaryTable,
   linksTable: dataStack.linksTable,
+  statementsTable: dataStack.statementsTable,
 });
 
 const frontendStack = new FrontendStack(app, `${prefix}-frontend-stack`, {

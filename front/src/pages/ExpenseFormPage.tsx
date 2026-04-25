@@ -16,6 +16,7 @@ import {
   getTransaction,
   updateTransaction,
 } from '../api/transactions';
+import { LinkWidget } from '../components/LinkWidget';
 
 const ExpenseFormSchema = z.object({
   description: z.string().min(1, 'Descrição obrigatória'),
@@ -357,6 +358,8 @@ export function ExpenseFormPage(): React.JSX.Element {
           </Flex>
         </form>
       </Box>
+
+      {isEditMode && <LinkWidget sk={decodedSk} typeFilter="EXP" />}
     </Box>
   );
 }

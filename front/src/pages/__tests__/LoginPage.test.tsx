@@ -33,21 +33,21 @@ describe('LoginPage — Google sign-in', () => {
     vi.clearAllMocks();
   });
 
-  it('renders "Continue with Google" button', () => {
+  it('renders "Continuar com o Google" button', () => {
     renderLoginPage();
-    expect(screen.getByText('Continue with Google')).toBeInTheDocument();
+    expect(screen.getByText('Continuar com o Google')).toBeInTheDocument();
   });
 
-  it('renders "or" divider', () => {
+  it('renders "ou" divider', () => {
     renderLoginPage();
-    expect(screen.getByText('or')).toBeInTheDocument();
+    expect(screen.getByText('ou')).toBeInTheDocument();
   });
 
   it('calls signInWithGoogle when Google button is clicked', async () => {
     mockSignInWithGoogle.mockResolvedValueOnce(undefined);
     renderLoginPage();
 
-    const button = screen.getByText('Continue with Google');
+    const button = screen.getByText('Continuar com o Google');
     await userEvent.click(button);
 
     expect(mockSignInWithGoogle).toHaveBeenCalledOnce();
@@ -57,7 +57,7 @@ describe('LoginPage — Google sign-in', () => {
     mockSignInWithGoogle.mockRejectedValueOnce(new Error('Could not start Google sign-in. Please try again.'));
     renderLoginPage();
 
-    const button = screen.getByText('Continue with Google');
+    const button = screen.getByText('Continuar com o Google');
     await userEvent.click(button);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not start Google sign-in. Please try again.');
@@ -65,9 +65,9 @@ describe('LoginPage — Google sign-in', () => {
 
   it('still renders the email/password form', () => {
     renderLoginPage();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
-    expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument();
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
   });
 
   it('shows error passed via navigation state', () => {

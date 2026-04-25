@@ -5,6 +5,8 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as path from 'path';
 import { Construct } from 'constructs';
 import { Environment } from '../config/environments';
@@ -17,6 +19,7 @@ export interface ApiStackProps extends cdk.StackProps {
   ledgerTable: dynamodb.ITable;
   summaryTable: dynamodb.ITable;
   linksTable: dynamodb.ITable;
+  statementsTable: dynamodb.ITable;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -219,7 +222,7 @@ export class ApiStack extends cdk.Stack {
       `${prefix}-deleteLink`,
       path.resolve(__dirname, '../../back/lambdas/src/links/delete-link.ts'),
       corsOrigin,
-      props.ledgerTable.tableName,
+      undefined,
       linksEnv,
     );
     props.linksTable.grantReadWriteData(deleteLinkHandler);
@@ -254,6 +257,158 @@ export class ApiStack extends cdk.Stack {
     const balanceResource = this.restApi.root.addResource('balance');
     this.cognitoMethod(balanceResource, 'GET', getBalanceHandler, cognitoAuthorizer);
 
+    // --- Statement Import & Reconciliation ---
+    const statementsBucket = new s3.Bucket(this, 'StatementsBucket', {
+      bucketName: `${prefix}-statements`,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      versioned: true,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      lifecycleRules: [{
+        id: 'glacier-after-90-days',
+        enabled: true,
+        transitions: [{
+          storageClass: s3.StorageClass.GLACIER,
+          transitionAfter: cdk.Duration.days(90),
+        }],
+      }],
+      cors: [{
+        allowedMethods: [s3.HttpMethods.PUT],
+        allowedOrigins: stage === 'prod' ? [props.environment.frontendUrl] : ['*'],
+        allowedHeaders: ['*'],
+        maxAge: 3000,
+      }],
+    });
+
+    const statementsEnv = {
+      STATEMENTS_TABLE_NAME: props.statementsTable.tableName,
+      STATEMENTS_BUCKET_NAME: statementsBucket.bucketName,
+    };
+
+    // Init_Upload_Handler — 256 MB / 10 s
+    const initStatementUploadHandler = this.makeLambda(
+      'InitStatementUploadHandler',
+      `${prefix}-initStatementUpload`,
+      path.resolve(__dirname, '../../back/lambdas/src/statements/init-statement-upload.ts'),
+      corsOrigin,
+      undefined,
+      statementsEnv,
+    );
+    props.statementsTable.grantWriteData(initStatementUploadHandler);
+    statementsBucket.grantPut(initStatementUploadHandler, 'statements/*');
+
+    // Process_Statement_Handler — 512 MB / 90 s, S3-triggered (increased for LLM API latency)
+    const anthropicSecret = cdk.aws_secretsmanager.Secret.fromSecretNameV2(
+      this, 'AnthropicSecret', 'laski/anthropic-api-key',
+    );
+
+    const processStatementHandler = new lambda.NodejsFunction(this, 'ProcessStatementHandler', {
+      functionName: `${prefix}-processStatement`,
+      entry: path.resolve(__dirname, '../../back/lambdas/src/statements/process-statement.ts'),
+      handler: 'handler',
+      runtime: Runtime.NODEJS_22_X,
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(90),
+      bundling: {
+        minify: true,
+        sourceMap: true,
+      },
+      environment: {
+        STATEMENTS_TABLE_NAME: props.statementsTable.tableName,
+        STATEMENTS_BUCKET_NAME: statementsBucket.bucketName,
+        TABLE_NAME: props.ledgerTable.tableName,
+        ANTHROPIC_SECRET_NAME: 'laski/anthropic-api-key',
+        CORS_ORIGIN: corsOrigin,
+      },
+    });
+    anthropicSecret.grantRead(processStatementHandler);
+    props.statementsTable.grantReadWriteData(processStatementHandler);
+    props.ledgerTable.grantReadData(processStatementHandler);
+    statementsBucket.grantRead(processStatementHandler, 'statements/*');
+
+    statementsBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(processStatementHandler),
+      { prefix: 'statements/' },
+    );
+
+    // Review_Handler — 256 MB / 10 s
+    const reviewStatementHandler = this.makeLambda(
+      'ReviewStatementHandler',
+      `${prefix}-reviewStatement`,
+      path.resolve(__dirname, '../../back/lambdas/src/statements/review-statement.ts'),
+      corsOrigin,
+      props.ledgerTable.tableName,
+      statementsEnv,
+    );
+    props.statementsTable.grantReadData(reviewStatementHandler);
+    props.ledgerTable.grantReadData(reviewStatementHandler);
+
+    // Confirm_Import_Handler — 512 MB / 30 s
+    const confirmStatementImportHandler = new lambda.NodejsFunction(
+      this,
+      'ConfirmStatementImportHandler',
+      {
+        functionName: `${prefix}-confirmStatementImport`,
+        entry: path.resolve(__dirname, '../../back/lambdas/src/statements/confirm-statement-import.ts'),
+        handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
+        memorySize: 512,
+        timeout: cdk.Duration.seconds(30),
+        bundling: { minify: true, sourceMap: true },
+        environment: {
+          STATEMENTS_TABLE_NAME: props.statementsTable.tableName,
+          TABLE_NAME: props.ledgerTable.tableName,
+          SUMMARY_TABLE_NAME: props.summaryTable.tableName,
+          LINKS_TABLE_NAME: props.linksTable.tableName,
+          CORS_ORIGIN: corsOrigin,
+        },
+      },
+    );
+    props.ledgerTable.grantReadWriteData(confirmStatementImportHandler);
+    props.statementsTable.grantReadWriteData(confirmStatementImportHandler);
+    props.summaryTable.grantReadWriteData(confirmStatementImportHandler);
+    props.linksTable.grantWriteData(confirmStatementImportHandler);
+
+    // List_Statements_Handler — 256 MB / 10 s
+    const listStatementsHandler = this.makeLambda(
+      'ListStatementsHandler',
+      `${prefix}-listStatements`,
+      path.resolve(__dirname, '../../back/lambdas/src/statements/list-statements.ts'),
+      corsOrigin,
+      undefined,
+      statementsEnv,
+    );
+    props.statementsTable.grantReadData(listStatementsHandler);
+
+    // Delete_Statement_Handler — 256 MB / 10 s
+    const deleteStatementHandler = this.makeLambda(
+      'DeleteStatementHandler',
+      `${prefix}-deleteStatement`,
+      path.resolve(__dirname, '../../back/lambdas/src/statements/delete-statement.ts'),
+      corsOrigin,
+      undefined,
+      statementsEnv,
+    );
+    props.statementsTable.grantReadWriteData(deleteStatementHandler);
+    statementsBucket.grantDelete(deleteStatementHandler, 'statements/*');
+
+    // /statements resource
+    const statementsResource = this.restApi.root.addResource('statements');
+    this.cognitoMethod(statementsResource, 'POST', initStatementUploadHandler, cognitoAuthorizer);
+    this.cognitoMethod(statementsResource, 'GET', listStatementsHandler, cognitoAuthorizer);
+
+    const statementByIdResource = statementsResource.addResource('{statementId}');
+    this.cognitoMethod(statementByIdResource, 'GET', reviewStatementHandler, cognitoAuthorizer);
+    this.cognitoMethod(statementByIdResource, 'DELETE', deleteStatementHandler, cognitoAuthorizer);
+
+    const statementConfirmResource = statementByIdResource.addResource('confirm');
+    this.cognitoMethod(statementConfirmResource, 'POST', confirmStatementImportHandler, cognitoAuthorizer);
+
+    new cdk.CfnOutput(this, 'StatementsBucketName', {
+      value: statementsBucket.bucketName,
+    });
+
     // Output for external consumers
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: this.restApi.url,
@@ -265,7 +420,7 @@ export class ApiStack extends cdk.Stack {
     functionName: string,
     entry: string,
     corsOrigin: string,
-    tableName: string,
+    tableName: string | undefined,
     additionalEnv?: Record<string, string>,
   ): lambda.NodejsFunction {
     return new lambda.NodejsFunction(this, id, {
@@ -280,7 +435,7 @@ export class ApiStack extends cdk.Stack {
         sourceMap: true,
       },
       environment: {
-        TABLE_NAME: tableName,
+        ...(tableName !== undefined ? { TABLE_NAME: tableName } : {}),
         CORS_ORIGIN: corsOrigin,
         ...additionalEnv,
       },

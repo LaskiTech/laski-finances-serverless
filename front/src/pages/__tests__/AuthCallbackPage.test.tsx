@@ -43,7 +43,7 @@ describe('AuthCallbackPage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, isLoading: true });
     renderCallback();
 
-    expect(screen.getByText('Completing sign-in...')).toBeInTheDocument();
+    expect(screen.getByText('Concluindo login...')).toBeInTheDocument();
   });
 
   it('redirects to /login on access_denied error', () => {
@@ -59,7 +59,7 @@ describe('AuthCallbackPage', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('/login', {
       replace: true,
-      state: { error: 'Sign-in with Google failed. Please try again.' },
+      state: { error: 'Login com Google falhou. Tente novamente.' },
     });
   });
 

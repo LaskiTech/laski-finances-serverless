@@ -17,6 +17,6 @@ vi.mock("./auth/auth-service", () => ({
 describe("App", () => {
   it("renders the app and redirects unauthenticated user to login", async () => {
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Sign In" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Entrar" })).toBeInTheDocument();
   });
 });
