@@ -1,10 +1,35 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude when working with code in this repository.
 
-## Steering & Specs
+## Specialized Agents
 
-All architectural decisions, coding standards, data model, and API contracts are fully documented in `.claude/steering/`. These files are always loaded into context — **read them before writing any code**. Feature requirements and designs live in `.claude/specs/<feature>/`.
+This repo uses role-specific CLAUDE.md files to scope context per layer:
+
+| Working in | Agent loaded | Role |
+|---|---|---|
+| `back/` | `back/CLAUDE.md` | Backend Lambda Developer |
+| `front/` | `front/CLAUDE.md` | Frontend React Developer |
+| `infra/` | `infra/CLAUDE.md` | AWS CDK Infrastructure Developer |
+
+Always navigate into the correct workspace before starting a feature task — the agent will load with the right role and rules.
+
+## Steering Files
+
+Role-specific standards and contracts live in `.claude/steering/`:
+
+| File | Loaded | Content |
+|---|---|---|
+| `project-overview.md` | always | Vision, business rules, domain language |
+| `architecture.md` | always | Stack overview, project structure, shared rules |
+| `shared-standards.md` | always | TypeScript, language, dependency management |
+| `api-contract.md` | auto | All API endpoints — backend implements, frontend consumes |
+| `data-model.md` | auto | DynamoDB tables, GSIs, access patterns |
+| `backend-standards.md` | auto | Lambda patterns, error handling, backend testing |
+| `frontend-standards.md` | auto | React, Chakra UI, Amplify, frontend testing |
+| `infra-standards.md` | auto | CDK patterns, IAM, tagging, resource naming |
+
+Feature requirements and designs live in `.claude/specs/<feature>/`.
 
 ## Commands
 

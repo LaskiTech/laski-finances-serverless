@@ -67,7 +67,7 @@ The implementation is split into 7 phases: data layer, parser library, backend l
     - _Requirements: 3.3, 4.9, 11.3, 11.4, 11.5_
 
   - [x] 2.6 Integration tests for `llm-parser.ts` in `back/lambdas/test/statements/parsers/llm-parser.integration.test.ts`
-    - Real Anthropic API calls with fixture PDFs from `.kiro/specs/statement-import/fixtures/`
+    - Real Anthropic API calls with fixture PDFs from `.claude/specs/statement-import/fixtures/`
     - Gated behind `ANTHROPIC_API_KEY` env var — not run in CI by default
     - Bank account fixture: canonical rows from Requirement 3 AC 8 are extracted, no `SALDO*` rows
     - Credit card fixture: per-card aggregates match (7077.99 / 379.00 / 1603.47 / 116.96 / 4.07 / sum = 9181.49)

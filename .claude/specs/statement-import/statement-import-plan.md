@@ -40,7 +40,7 @@ Parent = debit, child = charges — matches the Linking Layer's existing "this p
 
 ### Sample fixtures
 
-- **Task 0.1** — Commit the two sample PDFs (`extrato-lancamentos_conta.pdf`, `extrato-lancamentos_cartao.pdf`) to `.kiro/specs/statement-import/fixtures/`. They are referenced by `statement-import-requirements.md` §BR-S and by the property/unit tests (Phase 6). Without them, the integration tests cannot run.
+- **Task 0.1** — Commit the two sample PDFs (`extrato-lancamentos_conta.pdf`, `extrato-lancamentos_cartao.pdf`) to `.claude/specs/statement-import/fixtures/`. They are referenced by `statement-import-requirements.md` §BR-S and by the property/unit tests (Phase 6). Without them, the integration tests cannot run.
 
 ### Dependencies (exact versions, per `coding-standards.md`)
 
@@ -162,7 +162,7 @@ front/src/api/statements.ts
   - Test token usage logging is called with correct values.
 
 - **Task 2.6** — Integration tests in `back/lambdas/test/statements/parsers/llm-parser.integration.test.ts`:
-  - Real Anthropic API calls with fixture PDFs from `.kiro/specs/statement-import/fixtures/`.
+  - Real Anthropic API calls with fixture PDFs from `.claude/specs/statement-import/fixtures/`.
   - Gated behind `ANTHROPIC_API_KEY` env var — not run in CI by default.
   - Bank account fixture: canonical rows from Requirement 3 AC 8 are extracted, no `SALDO*` rows.
   - Credit card fixture: per-card aggregates match (7077.99 / 379.00 / 1603.47 / 116.96 / 4.07 / sum = 9181.49).
