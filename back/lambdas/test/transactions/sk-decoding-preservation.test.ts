@@ -90,7 +90,7 @@ const validUpdateBodyArb = fc
   .record({
     description: fc.string({ minLength: 1, maxLength: 50 }).filter((s) => s.trim().length > 0),
     amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
-    date: fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31") }).map((d) => d.toISOString().slice(0, 10)),
+    date: fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }).map((d) => d.toISOString().slice(0, 10)),
     type: fc.constantFrom("INC" as const, "EXP" as const),
     source: fc.string({ minLength: 1, maxLength: 30 }).filter((s) => s.trim().length > 0),
     category: fc.string({ minLength: 1, maxLength: 30 }).filter((s) => s.trim().length > 0),
