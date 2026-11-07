@@ -317,7 +317,6 @@ async function callAnthropicWithRetry(
       const response = await client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 16384,
-        temperature: 0,
         system: systemPrompt,
         messages: [
           {
