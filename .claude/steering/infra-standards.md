@@ -22,7 +22,7 @@ Use CDK `CfnOutput` exports and `Fn.importValue` for cross-stack references.
 ```typescript
 const handler = new NodejsFunction(this, 'HandlerName', {
   entry: path.resolve(__dirname, '../../back/lambdas/src/<domain>/<action>.ts'),
-  runtime: Runtime.NODEJS_22_X,
+  runtime: Runtime.NODEJS_24_X,
   memorySize: 256,
   timeout: Duration.seconds(10),
   bundling: { minify: true, sourceMap: true },
@@ -35,7 +35,7 @@ const handler = new NodejsFunction(this, 'HandlerName', {
 
 Rules:
 - Always set explicit `memorySize`, `timeout`, and `runtime`
-- Use `Runtime.NODEJS_22_X`
+- Use `Runtime.NODEJS_24_X`
 - Use `path.resolve(__dirname, ...)` for entry paths
 - Follow least-privilege IAM: `grantReadData`, `grantWriteData` — never broad policies
 - Every Lambda that writes to `laskifin-Ledger` MUST also have `SUMMARY_TABLE_NAME` env var + IAM grant on MonthlySummary

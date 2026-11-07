@@ -72,10 +72,10 @@ describe('AuthStack', () => {
     });
   });
 
-  test('creates PreSignUp Lambda with nodejs22.x runtime', () => {
+  test('creates PreSignUp Lambda with nodejs24.x runtime', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'laskifin-preSignUp',
-      Runtime: 'nodejs22.x',
+      Runtime: 'nodejs24.x',
     });
   });
 
@@ -243,10 +243,10 @@ describe('ApiStack', () => {
     });
   });
 
-  test('creates Lambda function with Node.js 22.x runtime', () => {
+  test('creates Lambda function with Node.js 24.x runtime', () => {
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'laskifin-createTransaction',
-      Runtime: 'nodejs22.x',
+      Runtime: 'nodejs24.x',
       MemorySize: 256,
       Timeout: 10,
     });
@@ -299,10 +299,10 @@ describe('ApiStack', () => {
       });
     });
 
-    test('preserves createTransaction Lambda with nodejs22.x runtime, 256 MB memory, 10s timeout', () => {
+    test('preserves createTransaction Lambda with nodejs24.x runtime, 256 MB memory, 10s timeout', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-createTransaction',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 256,
         Timeout: 10,
       });
@@ -408,7 +408,7 @@ describe('ApiStack', () => {
       for (const name of ['createIncome', 'listIncome', 'getIncome', 'updateIncome', 'deleteIncome']) {
         template.hasResourceProperties('AWS::Lambda::Function', {
           FunctionName: `laskifin-${name}`,
-          Runtime: 'nodejs22.x',
+          Runtime: 'nodejs24.x',
         });
       }
     });
@@ -417,7 +417,7 @@ describe('ApiStack', () => {
       for (const name of ['createLink', 'listLinks', 'deleteLink']) {
         template.hasResourceProperties('AWS::Lambda::Function', {
           FunctionName: `laskifin-${name}`,
-          Runtime: 'nodejs22.x',
+          Runtime: 'nodejs24.x',
         });
       }
     });
@@ -474,7 +474,7 @@ describe('ApiStack', () => {
       ]) {
         template.hasResourceProperties('AWS::Lambda::Function', {
           FunctionName: `laskifin-${name}`,
-          Runtime: 'nodejs22.x',
+          Runtime: 'nodejs24.x',
         });
       }
     });
@@ -618,7 +618,7 @@ describe('ApiStack', () => {
       expect(balanceHandlers.length).toBeGreaterThan(0);
     });
 
-    test('balance Lambda has nodejs22.x runtime, 256 MB memory, 10s timeout', () => {
+    test('balance Lambda has nodejs24.x runtime, 256 MB memory, 10s timeout', () => {
       // The balance handler has SUMMARY_TABLE_NAME + CORS_ORIGIN but no TABLE_NAME
       // Verify a Lambda exists with the correct runtime, memory, and timeout that also has SUMMARY_TABLE_NAME
       const templateJson = template.toJSON();
@@ -636,7 +636,7 @@ describe('ApiStack', () => {
 
       expect(balanceHandler).toBeDefined();
       const props = resources[balanceHandler!].Properties;
-      expect(props.Runtime).toBe('nodejs22.x');
+      expect(props.Runtime).toBe('nodejs24.x');
       expect(props.MemorySize).toBe(256);
       expect(props.Timeout).toBe(10);
     });

@@ -20,7 +20,7 @@ You are the **AWS CDK Infrastructure Developer** for LASKI Finances. Scope: `inf
 2. **Least-privilege IAM** — `grantReadData` / `grantWriteData` / `grantReadWriteData` only. No `iam:PolicyStatement` shortcuts, no wildcards.
 3. **Every Ledger-writing Lambda gets `SUMMARY_TABLE_NAME` env var + IAM grant on `laskifin-MonthlySummary`** — non-optional.
 4. **DynamoDB**: `BillingMode.PAY_PER_REQUEST` and `pointInTimeRecovery: true`, always.
-5. **Lambda template**: `Runtime.NODEJS_22_X`, explicit `memorySize` (default 256), explicit `timeout` (default 10s), `bundling: { minify: true, sourceMap: true }`, entry via `path.resolve(__dirname, '../../back/lambdas/src/<domain>/<action>.ts')`.
+5. **Lambda template**: `Runtime.NODEJS_24_X`, explicit `memorySize` (default 256), explicit `timeout` (default 10s), `bundling: { minify: true, sourceMap: true }`, entry via `path.resolve(__dirname, '../../back/lambdas/src/<domain>/<action>.ts')`.
 6. **Tags** — every new stack adds the `stack` tag in its constructor; app-level tags propagate via `cdk.Tags.of(app).add(...)` in `infra/bin/infra.ts`. Lowercase + hyphens.
 7. **Route 53** — always `route53.HostedZone.fromLookup` for `kioshitechmuta.link`. Never create a new zone.
 8. **Secrets** — Secrets Manager only (`laski/google-oauth-client-secret`, `laski/anthropic-api-key`). Never CDK context, never CloudFormation parameters, never plain env vars.

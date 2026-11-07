@@ -239,7 +239,7 @@ export class ApiStack extends cdk.Stack {
     const getBalanceHandler = new lambda.NodejsFunction(this, 'GetBalanceHandler', {
       entry: path.resolve(__dirname, '../../back/lambdas/src/balance/get-balance.ts'),
       handler: 'handler',
-      runtime: Runtime.NODEJS_22_X,
+      runtime: Runtime.NODEJS_24_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
       bundling: {
@@ -306,7 +306,7 @@ export class ApiStack extends cdk.Stack {
       functionName: `${prefix}-processStatement`,
       entry: path.resolve(__dirname, '../../back/lambdas/src/statements/process-statement.ts'),
       handler: 'handler',
-      runtime: Runtime.NODEJS_22_X,
+      runtime: Runtime.NODEJS_24_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(90),
       bundling: {
@@ -352,7 +352,7 @@ export class ApiStack extends cdk.Stack {
         functionName: `${prefix}-confirmStatementImport`,
         entry: path.resolve(__dirname, '../../back/lambdas/src/statements/confirm-statement-import.ts'),
         handler: 'handler',
-        runtime: Runtime.NODEJS_22_X,
+        runtime: Runtime.NODEJS_24_X,
         memorySize: 512,
         timeout: cdk.Duration.seconds(30),
         bundling: { minify: true, sourceMap: true },
@@ -427,7 +427,7 @@ export class ApiStack extends cdk.Stack {
       functionName,
       entry,
       handler: 'handler',
-      runtime: Runtime.NODEJS_22_X,
+      runtime: Runtime.NODEJS_24_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
       bundling: {

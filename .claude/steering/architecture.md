@@ -8,7 +8,7 @@ inclusion: always
 
 | Layer | Tech |
 |-------|------|
-| Runtime | Node.js 22.x / TypeScript (ES2022, NodeNext) |
+| Runtime | Node.js 24.x / TypeScript (ES2022, NodeNext) |
 | Infrastructure | AWS CDK v2.244.0 (TypeScript) |
 | Monorepo | npm workspaces (`back/`, `front/`, `infra/`) |
 | Frontend | React 19 + Vite + Chakra UI v3, hosted on Amplify |
