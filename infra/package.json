@@ -6,7 +6,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.244.0"
+    "aws-cdk-lib": "2.275.0"
   },
   "devDependencies": {
     "@types/jest": "29.5.14",
