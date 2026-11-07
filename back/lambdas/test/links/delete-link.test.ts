@@ -4,13 +4,13 @@ import type { APIGatewayProxyEvent } from "aws-lambda";
 const mockSend = vi.fn();
 
 vi.mock("@aws-sdk/client-dynamodb", () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock("@aws-sdk/lib-dynamodb", () => ({
   DynamoDBDocumentClient: { from: vi.fn(() => ({ send: mockSend })) },
-  QueryCommand: vi.fn((input: unknown) => ({ _type: "QueryCommand", input })),
-  DeleteCommand: vi.fn((input: unknown) => ({ _type: "DeleteCommand", input })),
+  QueryCommand: vi.fn(function (input: unknown) { return { _type: "QueryCommand", input }; }),
+  DeleteCommand: vi.fn(function (input: unknown) { return { _type: "DeleteCommand", input }; }),
 }));
 
 function makeEvent(linkId: string): APIGatewayProxyEvent {

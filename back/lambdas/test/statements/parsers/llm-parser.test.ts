@@ -11,12 +11,12 @@ const { mockCreate, mockSecretsSend } = vi.hoisted(() => {
 });
 
 vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(() => ({ messages: { create: mockCreate } })),
+  default: vi.fn(function () { return { messages: { create: mockCreate } }; }),
 }));
 
 vi.mock('@aws-sdk/client-secrets-manager', () => ({
-  SecretsManagerClient: vi.fn(() => ({ send: mockSecretsSend })),
-  GetSecretValueCommand: vi.fn((input: unknown) => ({ _type: 'GetSecretValueCommand', input })),
+  SecretsManagerClient: vi.fn(function () { return { send: mockSecretsSend }; }),
+  GetSecretValueCommand: vi.fn(function (input: unknown) { return { _type: 'GetSecretValueCommand', input }; }),
 }));
 
 import {

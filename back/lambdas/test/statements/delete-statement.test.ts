@@ -5,18 +5,18 @@ const mockSend = vi.fn();
 const mockS3Send = vi.fn();
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
   DynamoDBDocumentClient: { from: vi.fn(() => ({ send: mockSend })) },
-  GetCommand: vi.fn((input: unknown) => ({ _type: 'GetCommand', input })),
-  DeleteCommand: vi.fn((input: unknown) => ({ _type: 'DeleteCommand', input })),
+  GetCommand: vi.fn(function (input: unknown) { return { _type: 'GetCommand', input }; }),
+  DeleteCommand: vi.fn(function (input: unknown) { return { _type: 'DeleteCommand', input }; }),
 }));
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(() => ({ send: mockS3Send })),
-  DeleteObjectCommand: vi.fn((input: unknown) => ({ _type: 'DeleteObjectCommand', input })),
+  S3Client: vi.fn(function () { return { send: mockS3Send }; }),
+  DeleteObjectCommand: vi.fn(function (input: unknown) { return { _type: 'DeleteObjectCommand', input }; }),
 }));
 
 function makeEvent(statementId: string | null, sub = 'user-123'): APIGatewayProxyEvent {

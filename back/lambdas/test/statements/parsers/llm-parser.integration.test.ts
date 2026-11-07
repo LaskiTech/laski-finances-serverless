@@ -11,11 +11,11 @@ const { mockSecretsSend } = vi.hoisted(() => {
 });
 
 vi.mock('@aws-sdk/client-secrets-manager', () => ({
-  SecretsManagerClient: vi.fn(() => ({ send: mockSecretsSend })),
-  GetSecretValueCommand: vi.fn((input: unknown) => ({
+  SecretsManagerClient: vi.fn(function () { return { send: mockSecretsSend }; }),
+  GetSecretValueCommand: vi.fn(function (input: unknown) { return {
     _type: 'GetSecretValueCommand',
     input,
-  })),
+  }; }),
 }));
 
 import { llmParser } from '../../../src/statements/parsers/llm-parser';

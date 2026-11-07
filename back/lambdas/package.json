@@ -20,7 +20,8 @@
     "@aws-sdk/lib-dynamodb": "3.1164.0",
     "@types/aws-lambda": "8.10.130",
     "@types/uuid": "9.0.7",
-    "fast-check": "3.23.2",
-    "vitest": "3.2.4"
+    "fast-check": "4.10.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
   }
 }

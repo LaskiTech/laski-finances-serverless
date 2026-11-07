@@ -5,17 +5,17 @@ const mockSend = vi.fn();
 const mockGetSignedUrl = vi.fn();
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
   DynamoDBDocumentClient: { from: vi.fn(() => ({ send: mockSend })) },
-  PutCommand: vi.fn((input: unknown) => ({ _type: 'PutCommand', input })),
+  PutCommand: vi.fn(function (input: unknown) { return { _type: 'PutCommand', input }; }),
 }));
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(() => ({})),
-  PutObjectCommand: vi.fn((input: unknown) => ({ _type: 'PutObjectCommand', input })),
+  S3Client: vi.fn(function () { return {}; }),
+  PutObjectCommand: vi.fn(function (input: unknown) { return { _type: 'PutObjectCommand', input }; }),
 }));
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
