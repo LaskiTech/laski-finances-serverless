@@ -19,11 +19,7 @@
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "typeRoots": ["./node_modules/@types"],
-    "baseUrl": ".",
-    "paths": {
-      "@laski/infra": ["infra/lib"],
-      "@laski/functions": ["back/lambdas"]
-    }
+    "types": ["node", "jest"]
   },
   "exclude": ["node_modules", "cdk.out"]
 }

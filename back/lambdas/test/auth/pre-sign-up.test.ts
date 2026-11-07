@@ -7,8 +7,8 @@ const { mockSend } = vi.hoisted(() => {
 });
 
 vi.mock('@aws-sdk/client-cognito-identity-provider', () => ({
-  CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
-  AdminGetUserCommand: vi.fn((input: unknown) => ({ _type: 'AdminGetUserCommand', input })),
+  CognitoIdentityProviderClient: vi.fn(function () { return { send: mockSend }; }),
+  AdminGetUserCommand: vi.fn(function (input: unknown) { return { _type: 'AdminGetUserCommand', input }; }),
 }));
 
 import { handler } from '../../src/auth/pre-sign-up';

@@ -18,7 +18,7 @@ import type { APIGatewayProxyEvent } from "aws-lambda";
 const mockSend = vi.fn();
 
 vi.mock("@aws-sdk/client-dynamodb", () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock("@aws-sdk/lib-dynamodb", () => {
@@ -26,11 +26,11 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
     DynamoDBDocumentClient: {
       from: vi.fn(() => ({ send: mockSend })),
     },
-    GetCommand: vi.fn((input: unknown) => ({ _type: "GetCommand", input })),
-    UpdateCommand: vi.fn((input: unknown) => ({ _type: "UpdateCommand", input })),
-    DeleteCommand: vi.fn((input: unknown) => ({ _type: "DeleteCommand", input })),
-    QueryCommand: vi.fn((input: unknown) => ({ _type: "QueryCommand", input })),
-    BatchWriteCommand: vi.fn((input: unknown) => ({ _type: "BatchWriteCommand", input })),
+    GetCommand: vi.fn(function (input: unknown) { return { _type: "GetCommand", input }; }),
+    UpdateCommand: vi.fn(function (input: unknown) { return { _type: "UpdateCommand", input }; }),
+    DeleteCommand: vi.fn(function (input: unknown) { return { _type: "DeleteCommand", input }; }),
+    QueryCommand: vi.fn(function (input: unknown) { return { _type: "QueryCommand", input }; }),
+    BatchWriteCommand: vi.fn(function (input: unknown) { return { _type: "BatchWriteCommand", input }; }),
   };
 });
 
@@ -90,7 +90,7 @@ const validUpdateBodyArb = fc
   .record({
     description: fc.string({ minLength: 1, maxLength: 50 }).filter((s) => s.trim().length > 0),
     amount: fc.double({ min: 0.01, max: 100000, noNaN: true }),
-    date: fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31") }).map((d) => d.toISOString().slice(0, 10)),
+    date: fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }).map((d) => d.toISOString().slice(0, 10)),
     type: fc.constantFrom("INC" as const, "EXP" as const),
     source: fc.string({ minLength: 1, maxLength: 30 }).filter((s) => s.trim().length > 0),
     category: fc.string({ minLength: 1, maxLength: 30 }).filter((s) => s.trim().length > 0),

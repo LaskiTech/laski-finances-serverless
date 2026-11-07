@@ -563,7 +563,7 @@ All new Lambda functions follow the same pattern as existing handlers in `api-st
 ```typescript
 const handler = new NodejsFunction(this, 'HandlerName', {
   entry: path.resolve(__dirname, '../../back/lambdas/src/<domain>/<action>.ts'),
-  runtime: Runtime.NODEJS_22_X,
+  runtime: Runtime.NODEJS_24_X,
   memorySize: 256,
   timeout: Duration.seconds(10),
   bundling: { minify: true, sourceMap: true },

@@ -11,12 +11,12 @@ const { mockCreate, mockSecretsSend } = vi.hoisted(() => {
 });
 
 vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn(() => ({ messages: { create: mockCreate } })),
+  default: vi.fn(function () { return { messages: { create: mockCreate } }; }),
 }));
 
 vi.mock('@aws-sdk/client-secrets-manager', () => ({
-  SecretsManagerClient: vi.fn(() => ({ send: mockSecretsSend })),
-  GetSecretValueCommand: vi.fn((input: unknown) => ({ _type: 'GetSecretValueCommand', input })),
+  SecretsManagerClient: vi.fn(function () { return { send: mockSecretsSend }; }),
+  GetSecretValueCommand: vi.fn(function (input: unknown) { return { _type: 'GetSecretValueCommand', input }; }),
 }));
 
 import {
@@ -471,9 +471,13 @@ describe('llmParser factory', () => {
       expect.objectContaining({
         model: 'claude-sonnet-4-6',
         max_tokens: 16384,
-        temperature: 0,
       }),
     );
+    // API version 2026-10-21 (SDK 1.x) rejects sampling parameters with a 400
+    const params = mockCreate.mock.calls[0][0];
+    expect(params).not.toHaveProperty('temperature');
+    expect(params).not.toHaveProperty('top_p');
+    expect(params).not.toHaveProperty('top_k');
   });
 
   it('sends PDF as base64 document content block', async () => {

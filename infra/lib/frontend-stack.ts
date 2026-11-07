@@ -98,7 +98,7 @@ export class FrontendStack extends cdk.Stack {
     });
 
     // Ensure domain is created after branches
-    domain.addDependency(mainBranch);
-    domain.addDependency(devBranch);
+    domain.addResourceDependency(mainBranch);
+    domain.addResourceDependency(devBranch);
   }
 }

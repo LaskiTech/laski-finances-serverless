@@ -6,22 +6,22 @@ import type { APIGatewayProxyEvent } from 'aws-lambda';
 const mockSend = vi.fn();
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
   DynamoDBDocumentClient: { from: vi.fn(() => ({ send: mockSend })) },
-  GetCommand: vi.fn((input: unknown) => ({ _type: 'GetCommand', input })),
-  QueryCommand: vi.fn((input: unknown) => ({ _type: 'QueryCommand', input })),
-  DeleteCommand: vi.fn((input: unknown) => ({ _type: 'DeleteCommand', input })),
-  PutCommand: vi.fn((input: unknown) => ({ _type: 'PutCommand', input })),
-  BatchWriteCommand: vi.fn((input: unknown) => ({ _type: 'BatchWriteCommand', input })),
-  UpdateCommand: vi.fn((input: unknown) => ({ _type: 'UpdateCommand', input })),
+  GetCommand: vi.fn(function (input: unknown) { return { _type: 'GetCommand', input }; }),
+  QueryCommand: vi.fn(function (input: unknown) { return { _type: 'QueryCommand', input }; }),
+  DeleteCommand: vi.fn(function (input: unknown) { return { _type: 'DeleteCommand', input }; }),
+  PutCommand: vi.fn(function (input: unknown) { return { _type: 'PutCommand', input }; }),
+  BatchWriteCommand: vi.fn(function (input: unknown) { return { _type: 'BatchWriteCommand', input }; }),
+  UpdateCommand: vi.fn(function (input: unknown) { return { _type: 'UpdateCommand', input }; }),
 }));
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(() => ({ send: vi.fn() })),
-  DeleteObjectCommand: vi.fn((input: unknown) => ({ _type: 'DeleteObjectCommand', input })),
+  S3Client: vi.fn(function () { return { send: vi.fn() }; }),
+  DeleteObjectCommand: vi.fn(function (input: unknown) { return { _type: 'DeleteObjectCommand', input }; }),
 }));
 
 function makeEvent(

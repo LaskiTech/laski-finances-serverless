@@ -111,7 +111,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('init-statement-upload: 256 MB / 10 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-initStatementUpload',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 256,
         Timeout: 10,
       });
@@ -120,7 +120,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('process-statement: 512 MB / 90 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-processStatement',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 512,
         Timeout: 90,
       });
@@ -129,7 +129,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('review-statement: 256 MB / 10 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-reviewStatement',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 256,
         Timeout: 10,
       });
@@ -138,7 +138,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('confirm-statement-import: 512 MB / 30 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-confirmStatementImport',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 512,
         Timeout: 30,
       });
@@ -147,7 +147,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('list-statements: 256 MB / 10 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-listStatements',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 256,
         Timeout: 10,
       });
@@ -156,7 +156,7 @@ describe('Statement Import — ApiStack CDK assertions', () => {
     test('delete-statement: 256 MB / 10 s / Node 22.x', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
         FunctionName: 'laskifin-deleteStatement',
-        Runtime: 'nodejs22.x',
+        Runtime: 'nodejs24.x',
         MemorySize: 256,
         Timeout: 10,
       });

@@ -70,7 +70,7 @@ export class AuthStack extends cdk.Stack {
       functionName: `${prefix}-preSignUp`,
       entry: path.resolve(__dirname, '../../back/lambdas/src/auth/pre-sign-up.ts'),
       handler: 'handler',
-      runtime: Runtime.NODEJS_22_X,
+      runtime: Runtime.NODEJS_24_X,
       memorySize: 256,
       timeout: cdk.Duration.seconds(5),
       bundling: { minify: true, sourceMap: true },

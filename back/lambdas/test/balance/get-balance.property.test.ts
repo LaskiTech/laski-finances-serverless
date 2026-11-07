@@ -8,13 +8,13 @@ const { mockSend } = vi.hoisted(() => {
 });
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: vi.fn(() => ({})),
+  DynamoDBClient: vi.fn(function () { return {}; }),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
   DynamoDBDocumentClient: { from: vi.fn(() => ({ send: mockSend })) },
-  GetCommand: vi.fn((input: unknown) => ({ _type: 'GetCommand', input })),
-  QueryCommand: vi.fn((input: unknown) => ({ _type: 'QueryCommand', input })),
+  GetCommand: vi.fn(function (input: unknown) { return { _type: 'GetCommand', input }; }),
+  QueryCommand: vi.fn(function (input: unknown) { return { _type: 'QueryCommand', input }; }),
 }));
 
 import { handler } from '../../src/balance/get-balance';
